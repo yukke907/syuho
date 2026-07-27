@@ -832,9 +832,15 @@ async function generatePDF(){
   try{
     const imgs=[...stage.querySelectorAll("img")];
     await Promise.all(imgs.map(im=>im.complete?Promise.resolve():new Promise(r=>{im.onload=im.onerror=r;})));
-    await new Promise(r=>setTimeout(r,80));
+    if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(e){}}
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     const target=stage.querySelector(".sheet");
-    const canvas=await html2canvas(target,{scale:2,backgroundColor:"#ffffff",useCORS:true,width:794,windowWidth:794});
+    // iPhone/AndroidはCanvasの最大面積・最大辺に制限があるため、内容の高さに応じて倍率を自動調整（超えると真っ白・崩れの原因になる）
+    const cssW=794,cssH=Math.max(1,Math.ceil(target.getBoundingClientRect().height));
+    const MAX_AREA=16*1000*1000,MAX_DIM=8192;
+    let sc=Math.min(2,Math.sqrt(MAX_AREA/(cssW*cssH)),MAX_DIM/cssW,MAX_DIM/cssH);
+    if(!isFinite(sc)||sc<=0)sc=1;
+    const canvas=await html2canvas(target,{scale:sc,backgroundColor:"#ffffff",useCORS:true,width:cssW,height:cssH,windowWidth:cssW,windowHeight:cssH,x:0,y:0,scrollX:0,scrollY:0});
     const {jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","a4");
     const pw=210,ph=297;
     const scale=canvas.width/target.offsetWidth;
