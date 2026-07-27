@@ -147,10 +147,10 @@
 
   /* 写真 */
   .rowbtn2{display:flex;gap:10px;margin-top:12px}.rowbtn2 .btn{flex:1;min-height:50px;font-size:15px}
-  .photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px}
+  .photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px;align-items:start}
   .ph{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-  .ph .imgwrap{position:relative}
-  .ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#EEF1F6}
+  .ph .imgwrap{position:relative;aspect-ratio:4/3;overflow:hidden;background:#EEF1F6}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block}
   .ph .cap{display:block;width:100%;border:none;border-top:1px solid var(--line);border-radius:0;padding:10px;font-size:14px;min-height:46px}
   .ph .rm{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:8px;width:36px;height:36px;font-size:16px}
   .addph{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;aspect-ratio:4/3;border:2px dashed #C3CAD6;border-radius:8px;color:var(--navy);font-size:15px;font-weight:700;background:#fff}
@@ -845,7 +845,28 @@ async function generatePDF(){
     const pw=210,ph=297;
     const scale=canvas.width/target.offsetWidth;
     const trect=target.getBoundingClientRect();
-    const hz=[...target.querySelectorAll(".cl2,.dl2,.sec2 h4,.sec2 p,figure")].map(el=>{const r=el.getBoundingClientRect();return {t:(r.top-trect.top)*scale,b:(r.bottom-trect.top)*scale};}).filter(h=>h.b>h.t+1);
+    // 2列の中央区切り線：html2canvasはCSSのcolumn-ruleを描画しないため、キャンバスに直接引いてPC版と見た目を合わせる
+    const bodyEl=target.querySelector(".sheet-body");
+    if(bodyEl){
+      const bs=getComputedStyle(bodyEl),bodyRect=bodyEl.getBoundingClientRect();
+      const padT=parseFloat(bs.paddingTop)||0,padB=parseFloat(bs.paddingBottom)||0;
+      const phSec=target.querySelector(".photosec");
+      const rTop=(bodyRect.top-trect.top+padT)*scale;
+      const rBot=((phSec?phSec.getBoundingClientRect().top:bodyRect.bottom-padB)-trect.top)*scale;
+      if(rBot>rTop+2){
+        const cx=Math.round(canvas.width/2)+0.5,cctx=canvas.getContext("2d");
+        cctx.save();cctx.strokeStyle="#C2C9D3";cctx.lineWidth=Math.max(1,Math.round(scale));
+        cctx.beginPath();cctx.moveTo(cx,rTop);cctx.lineTo(cx,rBot);cctx.stroke();cctx.restore();
+      }
+    }
+    const rel=el=>{const r=el.getBoundingClientRect();return {t:(r.top-trect.top)*scale,b:(r.bottom-trect.top)*scale};};
+    const hz=[...target.querySelectorAll(".cl2,.dl2,.sec2 h4,.sec2 p,figure,.grp-blk")].map(rel).filter(h=>h.b>h.t+1);
+    // 見出し(h4)は直後の最初の内容ブロックまでを1かたまりとして扱い、見出しだけがページ末尾に取り残されないようにする（PC版のbreak-after:avoid相当）
+    target.querySelectorAll(".sec2 h4").forEach(h4=>{
+      const nx=h4.nextElementSibling;if(!nx)return;
+      const a=rel(h4),b=rel(nx),t=Math.min(a.t,b.t),bt=Math.max(a.b,b.b);
+      if(bt>t+1)hz.push({t,b:bt});
+    });
     const pageH=ph*canvas.width/pw;
     let y=0,page=0;
     while(y<canvas.height-1&&page<50){
