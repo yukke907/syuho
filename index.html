@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>株式会社太陽 週報</title>
+<style>
+  :root{
+    --navy:#14284B; --header:#10233F; --bg:#F7F8FB; --panel:#FFF;
+    --ink:#2E2E2E; --muted:#6D7684; --line:#E1E5EC;
+    --orange:#F59E0B; --orange-d:#D98705; --green:#10B981; --red:#EF4444; --link:#2563EB;
+    --green-bg:#E7F7F1; --amber-bg:#FDF3DE;
+    --font:"Meiryo","メイリオ","Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    --mono:"SFMono-Regular",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html,body{overflow-x:hidden}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.7;font-size:16px;-webkit-text-size-adjust:100%;line-break:strict;overflow-wrap:break-word}
+  textarea,.sec2 p,.cl2,.dl2,.pv,.ai-out,.hero-s,.hint,label,.pm{word-break:auto-phrase}
+  .app{max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:110px;overflow-x:hidden}
+  .bar{position:sticky;top:0;z-index:20;background:var(--header);color:#fff;height:52px;padding:0 14px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 5px rgba(16,35,63,.2)}
+  .bar .t{font-weight:700;font-size:17px;color:#fff}
+  .bar .logo{width:24px;height:24px;border-radius:6px;flex:none;object-fit:contain;background:#fff;padding:2px}
+  .bar .week{margin-left:auto;font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.16);padding:3px 10px;border-radius:999px}
+  .bar .back{background:none;border:none;color:#fff;font-size:26px;padding:0 4px;line-height:1}
+  .pad{padding:12px 14px 0}
+
+  /* stepper */
+  .stepper{padding:10px 14px 0}
+  .steptext{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;justify-content:space-between}
+  .steptext .idx{color:var(--muted);font-weight:700}
+  .stepbar{height:8px;background:#E1E5EC;border-radius:999px;overflow:hidden}
+  .stepbar i{display:block;height:100%;background:var(--orange);border-radius:999px;transition:width .2s ease}
+
+  .card{background:var(--panel);border-radius:8px;box-shadow:0 1px 3px rgba(16,35,63,.06);padding:12px;margin-bottom:8px}
+  .grp{background:var(--panel);border-radius:8px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(16,35,63,.06)}
+  .gh{font-size:15px;font-weight:700;color:var(--navy);padding:4px 0 6px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  label{display:block;font-size:15px;font-weight:700;color:var(--navy);margin:0 0 6px}
+  input,textarea,select{width:100%;font-family:var(--font);font-size:16px;border:1px solid #CBD2DC;border-radius:6px;padding:11px 12px;min-height:48px;background:#fff;color:var(--ink)}
+  input[type=date]{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2314284B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg>");background-repeat:no-repeat;background-position:right 8px center;background-size:16px 16px;padding-right:30px}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(20,40,75,.15)}
+  textarea{resize:none;overflow:hidden;line-height:1.6}
+  .row{display:flex;gap:12px}.row>*{flex:1;min-width:0}
+  .fld{margin-bottom:11px}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+  button{font-family:var(--font);cursor:pointer}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:17px;font-weight:700;padding:14px}
+  .btn:active{background:var(--orange-d)}
+  .btn.nav{background:#E2E6EC;color:var(--navy)}
+  .btn.sub{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+  .btn.danger{background:#fff;color:var(--red);border:1.5px solid var(--red);min-height:48px;font-size:15px}
+  .btn.block{margin-top:12px}
+
+  /* 大きなボタン選択 */
+  .pick{display:flex;gap:10px;flex-wrap:wrap}
+  .pick button{flex:1 1 30%;min-height:56px;border:2px solid #CBD2DC;background:#fff;color:var(--ink);border-radius:8px;font-size:15px;font-weight:700}
+  .pick button.on{background:var(--orange);border-color:var(--orange);color:#fff}
+
+  /* home list */
+  .proj{display:flex;align-items:center;gap:12px;padding:18px 6px;border-bottom:1px solid var(--line);cursor:pointer;min-height:64px}
+  .proj:last-child{border-bottom:none}
+  .proj:active{background:#F1F4F9}
+  .proj .pn{font-weight:700;font-size:17px}
+  .proj .pm{font-size:13px;color:var(--muted);margin-top:2px}
+  .proj .badge{margin-left:auto;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}
+  .badge.todo{background:var(--amber-bg);color:var(--orange-d)}
+  .badge.done{background:var(--green-bg);color:var(--green)}
+  .proj .chev{color:#B9C0C6;font-size:24px}
+  .kind{font-size:12px;color:var(--muted);background:#EEF1F6;padding:2px 8px;border-radius:5px;margin-left:8px}
+  .empty{color:var(--muted);font-size:15px;text-align:center;padding:26px 6px;line-height:1.9}
+  .alert{background:var(--amber-bg);border-radius:8px;padding:14px;font-size:14px;color:#8a5a00;margin-bottom:16px}
+  .hero{background:#fff;border-radius:12px;padding:13px 14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(16,35,63,.06);border-left:5px solid var(--orange)}
+  .hero-t{font-size:19px;font-weight:800;color:var(--navy)}
+  .hero-s{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.7}
+  .sec-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--navy);margin:4px 4px 10px}
+  .sec-label .c{font-family:var(--mono);font-size:11px;color:var(--muted);background:#EEF1F6;border-radius:5px;padding:1px 7px;font-weight:700}
+  .hstatus{margin-left:auto;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:999px}
+  .hstatus.todo{background:var(--amber-bg);color:var(--orange-d)}
+  .hstatus.done{background:var(--green-bg);color:var(--green)}
+  .pcard{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(16,35,63,.06);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer}
+  .pcard:active{background:#F1F4F9}
+  .pcard .pico{flex:0 0 44px;height:44px;border-radius:10px;background:#EAF0F6;display:flex;align-items:center;justify-content:center;color:var(--navy)}
+  .pcard .pico svg{width:24px;height:24px}
+  .pcard .pn{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pcard .pm{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .pcard .badge{flex:none;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;white-space:nowrap}
+  .pcard .chev{color:#C2C9D3;font-size:24px;flex:none}
+  .pcard .pdel{flex:0 0 40px;height:40px;border:none;background:none;color:#C2C9D3;padding:0;display:flex;align-items:center;justify-content:center}
+  .pcard .pdel:active{color:var(--red)}
+  .pcard .pdel svg{width:20px;height:20px}
+  .empty2{background:#fff;border-radius:12px;padding:38px 22px;text-align:center;box-shadow:0 1px 3px rgba(16,35,63,.06)}
+  .empty2 .eico{color:#C2C9D3}.empty2 .eico svg{width:44px;height:44px}
+  .empty2 .et{font-size:16px;font-weight:800;color:var(--navy);margin-top:12px}
+  .empty2 .es{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.8}
+  .datarow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+  .datarow button{font-size:12px;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-weight:700}
+  .carrytag{font-size:11px;color:var(--green);background:var(--green-bg);border-radius:5px;padding:2px 8px;margin-left:8px;font-weight:700}
+
+  /* 日別 */
+  .day{display:flex;align-items:stretch;gap:10px;margin-bottom:12px}
+  .day .dl{flex:0 0 54px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;background:var(--navy);border-radius:8px;padding:6px 0;line-height:1.15}
+  .day .dl .dd{font-size:13px;font-weight:800}
+  .day .dl .dw{font-size:12px;font-weight:700}
+  .day.sun .dl{background:var(--red)} .day.sat .dl{background:var(--link)}
+  .day textarea.dt{flex:1;min-height:54px;padding:14px}
+  .day .offbtn{flex:0 0 60px;min-height:54px;border:2px solid #CBD2DC;background:#fff;color:var(--muted);border-radius:8px;font-size:14px;font-weight:700}
+  .day .offbtn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .day.isoff textarea.dt{background:#F1F3F6;color:#aaa}
+
+  /* 確認チェック */
+  .chkph{font-size:14px;font-weight:700;color:var(--navy);margin:16px 0 8px;display:flex;gap:10px;align-items:center}
+  .chkph:first-child{margin-top:2px}
+  .chkcnt{font-family:var(--mono);font-size:12px;color:var(--muted);background:#EEF1F6;border-radius:5px;padding:2px 8px}
+  .chkgrid{display:grid;grid-template-columns:1fr;gap:5px}
+  .chk{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #CBD2DC;border-radius:8px;padding:5px 10px;min-height:40px;max-width:100%;overflow:hidden}
+  .chk.on{background:var(--green-bg);border-color:var(--green)}
+  .chk input[type=checkbox]{width:22px;height:22px;accent-color:var(--green);flex:none;margin:0}
+  .chk .body{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.3}
+  .chk .cn{font-weight:700;font-size:14.5px} .chk.on .cn{color:var(--green)}
+  .chk .cnote{font-size:11.5px;color:var(--muted);font-weight:400;margin-left:6px}
+  .chk .cdate{flex:0 0 92px;min-width:0;min-height:36px;font-size:12.5px;padding:5px 22px 5px 6px;background-position:right 5px center;background-size:14px 14px}
+  .chk .cname{flex:1;min-width:0;min-height:36px}
+  .chk .cdel{flex:0 0 38px;min-height:36px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
+  .chkadd{width:100%;min-height:44px;margin-top:8px;background:#fff;border:1.5px dashed var(--navy);color:var(--navy);border-radius:8px;font-weight:700;font-size:14.5px}
+  .prow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+  .prow .pcol{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+  .prow .cdel{flex:0 0 40px;min-height:40px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
+  .chkph{margin:12px 0 5px}
+
+  /* 予定リスト */
+  .addwrap .row2{display:flex;gap:10px;margin-bottom:10px}
+  .addwrap .row2 .mt{flex:1;min-width:0}
+  .addwrap .row2 input[type=date]{flex:0 0 92px;min-width:0;padding-right:22px;background-position:right 5px center;background-size:14px 14px}
+  .addwrap input[type=date]{min-height:48px}
+  .mrow{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--line)}
+  .mrow:last-child{border-bottom:none}
+  .mrow .md{font-family:var(--mono);font-weight:700;color:var(--navy);flex:0 0 auto;min-width:52px;font-size:15px;text-align:right;margin-left:auto;padding-left:8px}
+  .mrow .mt{flex:0 1 auto;font-size:15px}
+  .mrow .del{flex:0 0 54px;min-height:48px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:13px;font-weight:700}
+
+  /* 業務 */
+  .taskcard{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:14px}
+  .taskcard .lbl{font-size:13px;color:var(--muted);font-weight:700;margin:12px 0 6px}
+  .taskcard .lbl:first-child{margin-top:0}
+
+  /* 写真 */
+  .rowbtn2{display:flex;gap:10px;margin-top:12px}.rowbtn2 .btn{flex:1;min-height:50px;font-size:15px}
+  .photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px}
+  .ph{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .ph .imgwrap{position:relative}
+  .ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#EEF1F6}
+  .ph .cap{display:block;width:100%;border:none;border-top:1px solid var(--line);border-radius:0;padding:10px;font-size:14px;min-height:46px}
+  .ph .rm{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:8px;width:36px;height:36px;font-size:16px}
+  .addph{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;aspect-ratio:4/3;border:2px dashed #C3CAD6;border-radius:8px;color:var(--navy);font-size:15px;font-weight:700;background:#fff}
+  .addph .ic{font-size:30px;line-height:1}
+
+  /* PDFシート */
+  .sheet{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(16,35,63,.08);overflow:hidden;margin-bottom:16px}
+  .sheet-hd{background:var(--navy);color:#fff;font-weight:700;font-size:18px;padding:16px}
+  .sheet-meta{font-size:13px;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--line);line-height:1.8}
+  .sheet-body{padding:8px 16px 18px}
+  .sec2{margin-top:16px}
+  .sec2 h4{font-size:14px;font-weight:700;color:var(--navy);margin:0 0 6px;border-left:4px solid var(--orange);padding-left:9px}
+  .sec2 p{margin:0;font-size:14.5px;white-space:pre-wrap}
+  .dl2{font-size:14px;padding:2px 0}.dl2 b{display:inline-block;min-width:2.4em;color:var(--navy)}
+  .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
+  .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
+  .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
+  .sheet-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px}
+  .sheet-photos figure{margin:0}
+  .sheet-photos img{width:100%;border-radius:6px;display:block;border:1px solid var(--line)}
+  .sheet-photos figcaption{font-size:12px;color:var(--muted);margin-top:4px}
+
+  .fab{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;padding:10px 14px 18px;background:transparent;z-index:15}
+  .fab .rowbtn{display:flex;gap:12px}
+  .fab .rowbtn .btn.nav{flex:0 0 34%}
+  .fab .rowbtn .btn.go{flex:1}
+  .fab .rowbtn.three .btn{flex:1}.fab .rowbtn.three .btn.go{flex:1.5}
+  .toolbar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 4px 0}
+  .toolbar button{font-size:13px;color:var(--navy);background:#E2E6EC;border:none;border-radius:8px;padding:11px 14px;font-weight:700;min-height:44px}
+  .foot{color:var(--muted);font-size:12.5px;text-align:center;padding:14px 20px 4px;line-height:1.9}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  #pdfStage{position:fixed;left:-10000px;top:0;width:794px;background:#fff;z-index:-1}
+  .pdfmode .sheet{width:794px;box-shadow:none;border-radius:0;overflow:hidden}
+  .pdfmode .sheet-hd{font-size:21px;padding:15px 20px}
+  .pdfmode .sheet-meta{font-size:14px;padding:13px 20px;line-height:1.85}
+  .pdfmode .sheet-body{padding:16px 22px 22px;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3}
+  .pdfmode .sec2{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 14px}
+  .pdfmode .sec2.breakok{break-inside:auto;-webkit-column-break-inside:auto}
+  .pdfmode .sec2.photosec{column-span:all;-webkit-column-span:all;margin-top:16px}
+  .pdfmode .grp-blk{break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px}
+  .pdfmode .sec2 h4{font-size:16px;margin:0 0 7px;border-left:none;padding-left:0;border-bottom:2px solid var(--orange);display:table;padding-bottom:3px}
+  .pdfmode .sec2.wide{column-span:all;-webkit-column-span:all;margin-top:6px}
+  .pdfmode .sec2 p{font-size:15px;line-height:1.8}
+  .pdfmode .dl2{font-size:15px;padding:2px 0}.pdfmode .dl2 b{min-width:3.4em}
+  .pdfmode .cl2{font-size:15px;padding:2px 0}
+  .pdfmode .cl2,.pdfmode .dl2{break-inside:avoid;-webkit-column-break-inside:avoid}
+  .pdfmode .sheet-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-items:start}
+  .pdfmode .sheet-photos img{width:100%;height:auto;object-fit:contain;border:1px solid var(--line);border-radius:4px;display:block}
+  .pdfmode .sheet-photos figcaption{font-size:13px;margin-top:5px;color:var(--muted)}
+  @media print{
+    html,body{background:#fff!important;width:210mm!important;margin:0!important;padding:0!important}
+    body *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .bar,.fab,#home,#editor,.stepper,.toolbar,.foot,.pv-actions{display:none!important}
+    #preview{display:block!important;padding:0!important;width:210mm!important;margin:0!important}
+    .app{padding:0!important;margin:0!important;max-width:none!important;width:210mm!important;min-height:0}
+    .app>#preview>.pad{padding:0!important;width:210mm!important;margin:0!important}
+    #sheet,.sheet{width:210mm!important;margin:0!important}
+    .sheet{box-shadow:none!important;border-radius:0!important}
+    .sheet-hd{font-size:21px;padding:15px 20px}
+    .sheet-meta{font-size:14px;padding:13px 20px;line-height:1.85}
+    .sheet-body{padding:14px 20px 20px!important;column-count:2;column-width:88mm;column-gap:22px;column-rule:1px solid #C2C9D3}
+    .sheet-body .sec2{break-inside:avoid;page-break-inside:avoid;margin-top:0;margin-bottom:14px}
+    .sheet-body .sec2.breakok{break-inside:auto;page-break-inside:auto}
+    .sheet-body .sec2.photosec{column-span:all;-webkit-column-span:all;margin-top:16px}
+    .sec2 h4{font-size:16px;margin:0 0 7px;border-left:none;padding-left:0;border-bottom:2px solid var(--orange);display:table;padding-bottom:3px}
+    .sec2.wide{column-span:all;-webkit-column-span:all;margin-top:6px}
+    .sec2 p{font-size:15px;line-height:1.8}
+    .dl2{font-size:15px;padding:2px 0} .dl2 b{min-width:3.4em}
+    .cl2{font-size:15px;padding:2px 0}
+    .cl2,.dl2{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid}
+    .grp-blk{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px}
+    .sec2 h4{break-after:avoid;page-break-after:avoid}
+    .cl2.phh{break-after:avoid;page-break-after:avoid}
+    .sheet-photos{grid-template-columns:repeat(2,1fr)!important;gap:12px;align-items:start}
+    .sheet-photos img{width:100%!important;height:auto!important;object-fit:contain;border:1px solid var(--line)}
+    .sheet-photos figcaption{font-size:14px;margin-top:5px}
+    .sheet-photos figure{break-inside:avoid;page-break-inside:avoid}
+    @page{margin:0;size:A4}
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="bar">
+    <button class="back" id="backBtn" style="display:none" onclick="onBack()" aria-label="戻る">‹</button>
+    <img class="logo" src="data:image/png;base64,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" alt="太陽"><span class="t" id="barTitle">週報メーカー</span>
+    <span class="week" id="week">—</span>
+  </div>
+
+  <!-- HOME -->
+  <div id="home" class="pad">
+    <div class="hero">
+      <div class="hero-t">今週の週報をつくる</div>
+      <div class="hero-s">物件をえらんで、写真とチェックだけ。先週の予定は自動で引き継がれます。</div>
+    </div>
+    <div class="sec-label">物件・案件 <span class="c" id="homeCount"></span><span class="hstatus" id="homeStatus" style="display:none"></span></div>
+    <div id="projList"></div>
+    <div class="datarow">
+      <button onclick="loadSample()">サンプルを入れる</button>
+    </div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-07-27 D（曜日つき日付・下線見出し）</div>
+  </div>
+
+  <!-- EDITOR -->
+  <div id="editor" style="display:none">
+    <div class="stepper"><div class="steptext"><span id="stepName"></span><span class="idx" id="stepIdx"></span></div>
+      <div class="stepbar"><i id="stepFill"></i></div></div>
+    <div class="pad">
+
+      <!-- step: 種別＋基本（現場） -->
+      <div class="stepsec" id="s_basicG">
+        <div class="grp" id="typeBox">
+          <div class="gh">種別をえらぶ</div>
+          <div class="pick"><button id="segGenba" onclick="setMode('genba')">工事部</button>
+            <button id="segPlan" onclick="setMode('plan')">TAIYOSHEET</button></div>
+        </div>
+        <div class="grp">
+          <div class="gh">物件・工期・出来高 <span class="carrytag">自動引き継ぎ</span></div>
+          <div class="fld"><label>物件名</label><input id="fName" placeholder=""></div>
+          <div class="fld"><label>請負金額（円）</label><input id="fContract" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
+          <div class="row fld">
+            <div><label>実行予算01（円）</label><input id="fBudget01" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
+            <div><label>実行予算02 現在（円）</label><input id="fBudget02" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
+          </div>
+          <div class="fld"><label>工期</label><div class="row"><input id="fKokiStart" type="date"><input id="fKokiEnd" type="date"></div></div>
+          <div class="fld"><label>出来高（％）</label><input id="fDeki" type="number" inputmode="decimal" min="0" max="100" placeholder="65"></div>
+          <div class="row fld">
+            <div><label>利益率</label><input id="fRiritsu" type="number" inputmode="decimal" placeholder=""></div>
+            <div><label>担当者</label><input id="fTanto" placeholder="氏名"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- step: 今週（現場） -->
+      <div class="stepsec" id="s_thisG">
+        <div class="grp">
+          <div class="gh">今週の実績（日別）<span class="carrytag" id="reflectTag" style="display:none">先週の予定を反映</span></div>
+          <div id="thisDayList"></div>
+          <div class="hint">先週の「来週予定」が入っています。やった内容に直してください。</div>
+        </div>
+        <div class="grp">
+          <div class="gh">工程の状況</div>
+          <div class="pick" id="koteiPick"></div>
+        </div>
+        <div class="grp">
+          <div class="gh">今週の報告</div>
+          <textarea id="fReport" placeholder="例：塗装工事が遅延気味、応援希望。近隣挨拶を実施。"></textarea>
+          <button class="btn sub block" onclick="aiSummarize('fReport','aiOut')" id="aiBtn">AIでまとめる</button>
+          <div id="aiOut"></div>
+          <div class="hint">音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。メモ書きでも「AIでまとめる」で整います。</div>
+        </div>
+      </div>
+
+      <!-- step: 来週（現場） -->
+      <div class="stepsec" id="s_nextG">
+        <div class="grp">
+          <div class="gh">来週の工事予定（日別）</div>
+          <div id="nextDayList"></div>
+          <div class="hint">これが翌週の「今週の実績」に自動で引き継がれます。</div>
+        </div>
+      </div>
+
+      <!-- step: 確認項目（現場） -->
+      <div class="stepsec" id="s_checkG">
+        <div class="grp">
+          <div class="gh">打合せ確認項目 <span class="carrytag">毎週引き継ぎ</span></div>
+          <div id="checkList"></div>
+          <div class="hint">エクセル週報の確認項目です。済にした項目は翌週も残り、抜けが分かります。</div>
+        </div>
+      </div>
+
+      <!-- step: 予定・連絡（現場） -->
+      <div class="stepsec" id="s_contactG">
+        <div class="grp">
+          <div class="gh">今後の重要な予定 <span class="carrytag">引き継ぎ</span></div>
+          <div class="addwrap"><div class="row2"><input id="mText" class="mt" placeholder="予定の内容"><input id="mDate" type="date"></div>
+            <button class="chkadd" onclick="addMile()">＋追加</button></div>
+          <div id="mileList" style="margin-top:8px"></div>
+        </div>
+        <div class="grp">
+          <div class="gh">懸案・問題</div>
+          <div class="fld"><label>着工前打合せ懸案事項 → 対応 <span class="carrytag">毎週引き継ぎ</span></label>
+            <textarea id="fKenan" placeholder="例：バルコニー防水の納まりを監理者と協議 ⇒ 11/20打合せ済"></textarea></div>
+          <div class="fld"><label>クレーム・問い合わせ</label>
+            <textarea id="fIssue" placeholder="その週のこと。なければ空欄でOK"></textarea></div>
+        </div>
+      </div>
+
+      <!-- step: 今週・来週（TAIYOSHEET） -->
+      <div class="stepsec" id="s_weekP">
+        <div class="grp" id="typeBoxP">
+          <div class="gh">種別をえらぶ</div>
+          <div class="pick"><button id="segGenba2" onclick="setMode('genba')">工事部</button>
+            <button id="segPlan2" onclick="setMode('plan')">TAIYOSHEET</button></div>
+        </div>
+        <div class="grp">
+          <div class="gh">今週の予定（報告・課題・相談）</div>
+          <textarea id="tsThis" placeholder=""></textarea>
+        </div>
+        <div class="grp">
+          <div class="gh">来週の予定（報告・課題・相談）</div>
+          <textarea id="tsNext" placeholder=""></textarea>
+        </div>
+        <div class="grp">
+          <button class="btn sub block" id="aiBtnP" onclick="aiHereP()">AIでまとめる</button>
+          <div id="aiOutP"></div>
+          <div class="hint">音声はキーボードの🎤（音声入力）で。書いた欄を選んで「AIでまとめる」を押すと短い箇条書きに整います。</div>
+        </div>
+      </div>
+
+      <!-- step: やることリスト（業務） -->
+      <div class="stepsec" id="s_todoP">
+        <div class="grp">
+          <div class="gh">やることリスト</div>
+          <div id="todoList"></div>
+          <button class="chkadd" onclick="addTodo()">＋追加</button>
+        </div>
+      </div>
+
+      <!-- step: 物件リスト（業務） -->
+      <div class="stepsec" id="s_propP">
+        <div class="grp">
+          <div class="gh">物件・案件リスト <span class="carrytag">引き継ぎ</span></div>
+          <div id="propList"></div>
+          <button class="chkadd" onclick="addProp()">＋追加</button>
+        </div>
+      </div>
+
+      <!-- step: 写真（共通） -->
+      <div class="stepsec" id="s_photo">
+        <div class="grp">
+          <div class="gh">写真（PDFに一緒に載ります）</div>
+          <div class="photos" id="photoGrid"></div>
+          <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="onPhotos(event)">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div id="preview" style="display:none">
+    <div class="pad"><div id="sheet"></div></div>
+    <div class="pad pv-actions">
+    </div>
+  </div>
+</div>
+
+<!-- 下部の操作 -->
+<div class="fab" id="fabHome"><button class="btn" onclick="newReport()">＋ 新しい週報をつくる</button></div>
+<div class="fab" id="fabEdit" style="display:none"><div class="rowbtn">
+  <button class="btn nav" onclick="prevStep()">もどる</button>
+  <button class="btn go" id="nextBtn" onclick="nextStep()">次へ →</button>
+</div></div>
+<div class="fab" id="fabPreview" style="display:none"><div class="rowbtn three">
+  <button class="btn nav" onclick="editAgain()">もどる</button>
+  <button class="btn go" onclick="generatePDF()">PDFにする</button>
+  <button class="btn nav" onclick="go('home')">ホーム</button>
+</div></div>
+
+<div id="pdfStage" aria-hidden="true"></div>
+
+<script>
+"use strict";
+const KEY="taiyo-weekly-maker-v12";
+const DAYS=["日","月","火","水","木","金","土"];
+const KOTEI=["順調","やや遅延","要応援"];
+const CATS=["現調","見積","打合せ","書類","その他"];
+const STATS=["完了","進行","予定"];
+const CHECK_DEF=[
+  {phase:"着工前",hasDate:false,items:[["内定通知書","各業種へ通知"],["施工店手配",""],["実行予算","01/02作成・承認"],["発注書発行",""],["着工準備①","現地確認・見本焼き"],["着工準備②","安全書類・災防協"],["着工準備③","着工前MTG・工区割図"]]},
+  {phase:"工種別 開始日程",hasDate:true,items:[["共通仮設工事",""],["足場仮設工事",""],["下地調査",""],["下地補修工事",""],["高圧洗浄工事",""],["鉄部塗装工事",""],["外壁塗装工事",""],["防水工事",""],["長尺シート工事",""],["足場解体工事",""],["クリーニング工事",""],["下地検査（社内検査）",""]]},
+  {phase:"竣工図書・引渡し（依頼事項）",hasDate:false,items:[["変更契約依頼",""],["保証書・出荷証明依頼",""],["下地補修図依頼",""],["竣工図書作成",""],["引渡し書類作成",""],["各種押印",""],["引渡し",""],["引継ぎ書入力",""],["竣工後会議",""],["竣工図書回覧",""],["メンテカード提出",""],["安全書類提出",""],["竣工後収支報告",""]]},
+  {phase:"入金",hasDate:true,addLabel:"請求",items:[["請求1回目",""],["請求2回目",""],["請求3回目",""]]}
+];
+const ICON_BLDG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 21V9h4a2 2 0 0 1 2 2v10"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>';
+const ICON_CLIP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M9 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><path d="M8 12h8M8 16h5"/></svg>';
+const ICON_DOC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>';
+const ICON_TRASH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/><path d="M10 11v6M14 11v6"/></svg>';
+const MIC='<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;vertical-align:-4px;margin-right:6px" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const STEPS={genba:["s_basicG","s_thisG","s_nextG","s_checkG","s_contactG","s_photo"],
+             plan:["s_weekP","s_todoP","s_propP","s_photo"]};
+const STEP_NAMES={s_basicG:"基本情報",s_thisG:"今週の実績",s_nextG:"来週の予定",s_checkG:"確認項目",s_contactG:"予定・連絡",
+                  s_weekP:"今週・来週",s_todoP:"やること",s_propP:"物件リスト",s_photo:"写真"};
+const uid=()=>Math.random().toString(36).slice(2,9);
+let state={projects:[],reports:[]};
+let cur=null,curMode="genba",lastField=null,step=0;
+
+function toLocalISO(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${dd}`;}
+function weekKey(d){const t=d?new Date(d):new Date();t.setHours(0,0,0,0);const day=(t.getDay()+6)%7;const mon=new Date(t);mon.setDate(t.getDate()-day);return toLocalISO(mon);}
+function weekLabel(){const t=new Date();const day=(t.getDay()+6)%7;const mon=new Date(t);mon.setDate(t.getDate()-day);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const f=d=>`${d.getMonth()+1}/${d.getDate()}`;return `${f(mon)}–${f(sun)}`;}
+const todayISO=()=>toLocalISO(new Date());
+const fmtD=iso=>{if(!iso)return"";const p=iso.split("-");return p.length===3?`${+p[1]}/${+p[2]}`:iso;};
+function parseISO(s){if(!s)return new Date();const p=s.split("-");return new Date(+p[0],(+p[1]||1)-1,(+p[2]||1));}
+function dayMD(weekISO,offset,i){const mon=parseISO(weekISO);const d=new Date(mon);d.setDate(mon.getDate()-1+offset+i);return `${d.getMonth()+1}/${d.getDate()}`;}
+const WD=["日","月","火","水","木","金","土"];
+function fmtDW(iso){if(!iso)return"";const d=parseISO(iso);return `${d.getMonth()+1}/${d.getDate()}（${WD[d.getDay()]}）`;}
+const yen=v=>{const s=(v==null?"":String(v)).trim();if(s==="")return"";const n=Number(s.replace(/,/g,""));return isNaN(n)?s:"¥"+n.toLocaleString();};
+function moneyDigits(v){return (v==null?"":String(v)).replace(/[^\d]/g,"");}
+function fmtMoney(v){const d=moneyDigits(v);return d?Number(d).toLocaleString():"";}
+const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
+const setV=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||"";};
+const blankDays=()=>DAYS.map((d,i)=>({d,text:"",off:i===0}));
+const defChecks=()=>CHECK_DEF.map(p=>({phase:p.phase,hasDate:p.hasDate,addLabel:p.addLabel||"",items:p.items.map(a=>({name:a[0],note:a[1],date:"",done:false,custom:false}))}));
+function ag(el){if(!el)return;el.style.height="auto";el.style.height=(el.scrollHeight+2)+"px";}
+function agAll(){document.querySelectorAll("#editor textarea").forEach(ag);}
+
+function go(s){
+  ["home","editor","preview"].forEach(x=>document.getElementById(x).style.display=x===s?"":"none");
+  document.getElementById("fabHome").style.display=s==="home"?"":"none";
+  document.getElementById("fabEdit").style.display=s==="editor"?"":"none";
+  document.getElementById("fabPreview").style.display=s==="preview"?"":"none";
+  document.getElementById("backBtn").style.display=s==="home"?"none":"";
+  document.getElementById("barTitle").textContent=s==="home"?"株式会社太陽 週報":s==="preview"?"できあがり":"週報をつくる";
+  if(s==="home")renderHome();
+  window.scrollTo(0,0);
+}
+function onBack(){const scr=document.getElementById("editor").style.display!=="none";
+  if(scr){persist();if(step>0){step--;showStep();}else go("home");}else go("home");}
+
+function renderHome(){
+  document.getElementById("week").textContent=weekLabel();
+  const wk=weekKey();const el=document.getElementById("projList");
+  const cnt=document.getElementById("homeCount");const st=document.getElementById("homeStatus");
+  if(!state.projects.length){
+    el.innerHTML=`<div class="empty2"><div class="eico">${ICON_DOC}</div><div class="et">まだ週報がありません</div><div class="es">下の「＋新しい週報をつくる」から始めましょう。</div></div>`;
+    cnt.textContent="";st.style.display="none";return;
+  }
+  el.innerHTML=state.projects.map(p=>{
+    const done=state.reports.some(r=>r.projectId===p.id&&r.week===wk);
+    const ico=p.mode==="plan"?ICON_CLIP:ICON_BLDG;
+    return `<div class="pcard" onclick="openProject('${p.id}')">
+      <div class="pico">${ico}</div>
+      <div style="flex:1;min-width:0"><div class="pn">${esc(p.name)}</div><div class="pm">${p.mode==="plan"?"TAIYOSHEET":"工事部"}${p.meta?"・"+esc(p.meta):""}</div></div>
+      <span class="badge ${done?"done":"todo"}">${done?"提出済":"未提出"}</span>
+      <button class="pdel" onclick="event.stopPropagation();delProject('${p.id}')" aria-label="削除">${ICON_TRASH}</button>
+      <span class="chev">›</span></div>`;}).join("");
+  cnt.textContent=state.projects.length+"件";
+  const todo=state.projects.filter(p=>!state.reports.some(r=>r.projectId===p.id&&r.week===wk)).length;
+  st.style.display="";st.textContent=todo?`今週 未提出 ${todo}件`:"今週はすべて提出済";st.className="hstatus "+(todo?"todo":"done");
+}
+
+function emptyReport(mode){
+  return {id:uid(),projectId:null,week:weekKey(),date:todayISO(),mode:mode||"genba",
+    name:"",kokiStart:"",kokiEnd:"",deki:"",riritsu:"",tanto:"",contract:"",budget01:"",budget02:"",kotei:"順調",report:"",
+    thisDays:blankDays(),nextDays:blankDays(),checks:defChecks(),miles:[],kenan:"",issue:"",
+    pNext:"",tsThis:"",tsNext:"",todos:[],props:[],photos:[],reflected:false};
+}
+function seedFromPrev(p,prev){
+  const r=emptyReport(p.mode);r.projectId=p.id;r.name=p.name;r.date=todayISO();
+  if(prev){
+    r.kokiStart=prev.kokiStart;r.kokiEnd=prev.kokiEnd;r.tanto=prev.tanto;r.deki=prev.deki;r.riritsu=prev.riritsu;r.kenan=prev.kenan;
+    r.contract=prev.contract||"";r.budget01=prev.budget01||"";r.budget02=prev.budget02||"";
+    if(prev.checks&&prev.checks.length)r.checks=prev.checks.map(ph=>({phase:ph.phase,hasDate:ph.hasDate,addLabel:ph.addLabel||"",items:ph.items.map(i=>({name:i.name,note:i.note,date:i.date||"",done:i.done,custom:!!i.custom}))}));
+    r.miles=(prev.miles||[]).map(m=>({date:m.date,text:m.text}));
+    r.thisDays=(prev.nextDays||blankDays()).map(d=>({d:d.d,text:d.off?"":d.text,off:d.off}));
+    r.props=(prev.props||[]).map(x=>({name:x.name,status:x.status||""}));
+    r.todos=(prev.todos||[]).filter(t=>!t.done).map(t=>({text:t.text,done:false}));
+    r.reflected=(prev.nextDays||[]).some(d=>!d.off&&d.text.trim());
+  }
+  return r;
+}
+function openProject(pid){
+  const p=state.projects.find(x=>x.id===pid);if(!p)return;const wk=weekKey();
+  const existing=state.reports.find(r=>r.projectId===pid&&r.week===wk);
+  if(existing){cur=JSON.parse(JSON.stringify(existing));cur.date=cur.date||todayISO();if(!cur.checks)cur.checks=defChecks();if(!cur.miles)cur.miles=[];}
+  else{cur=seedFromPrev(p,state.reports.find(r=>r.projectId===pid));}
+  setMode(cur.mode);loadEditor();step=0;go("editor");showStep();
+  document.getElementById("typeBox").style.display="none";document.getElementById("typeBoxP").style.display="none";
+}
+function newReport(){cur=emptyReport("genba");setMode("genba");loadEditor();step=0;go("editor");showStep();
+  document.getElementById("typeBox").style.display="";document.getElementById("typeBoxP").style.display="";}
+function delProject(id){
+  const p=state.projects.find(x=>x.id===id);
+  if(!confirm((p?p.name:"この物件")+"\nを削除しますか？（この物件の週報も消えます）"))return;
+  state.projects=state.projects.filter(x=>x.id!==id);
+  state.reports=state.reports.filter(r=>r.projectId!==id);
+  save();renderHome();
+}
+
+function setMode(m){
+  curMode=m;
+  ["segGenba","segGenba2"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle("on",m==="genba");});
+  ["segPlan","segPlan2"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle("on",m==="plan");});
+  if(cur)cur.mode=m;
+  if(document.getElementById("editor").style.display!=="none"){step=0;showStep();}
+}
+
+function showStep(){
+  const seq=STEPS[curMode];if(step>=seq.length)step=seq.length-1;if(step<0)step=0;
+  document.querySelectorAll(".stepsec").forEach(el=>el.style.display="none");
+  document.getElementById(seq[step]).style.display="";
+  document.getElementById("stepName").textContent=STEP_NAMES[seq[step]];
+  document.getElementById("stepIdx").textContent=`${step+1} / ${seq.length}`;
+  document.getElementById("stepFill").style.width=Math.round((step+1)/seq.length*100)+"%";
+  document.getElementById("nextBtn").textContent=(step===seq.length-1)?"できた → PDF":"次へ →";
+  window.scrollTo(0,0);setTimeout(agAll,20);
+}
+function nextStep(){
+  collect();
+  const seq=STEPS[curMode];
+  if(step===0&&!cur.name){alert(curMode==="genba"?"物件名を入れてください。":"氏名・部署を入れてください。");return;}
+  persist();
+  if(step<seq.length-1){step++;showStep();}else finish();
+}
+function prevStep(){persist();if(step>0){step--;showStep();}else go("home");}
+
+function loadEditor(){
+  const c=cur;
+  setV("fName",c.name);setV("fKokiStart",c.kokiStart);setV("fKokiEnd",c.kokiEnd);setV("fDeki",c.deki);setV("fRiritsu",c.riritsu);setV("fTanto",c.tanto);
+  setV("fContract",fmtMoney(c.contract));setV("fBudget01",fmtMoney(c.budget01));setV("fBudget02",fmtMoney(c.budget02));
+  setV("fReport",c.report);setV("fKenan",c.kenan);setV("fIssue",c.issue);
+  setV("tsThis",c.tsThis);setV("tsNext",c.tsNext);
+  if(!c.thisDays||!c.thisDays.length)c.thisDays=blankDays();
+  if(!c.nextDays||!c.nextDays.length)c.nextDays=blankDays();
+  if(!c.checks||!c.checks.length)c.checks=defChecks();if(!c.miles)c.miles=[];
+  if(!c.todos)c.todos=[];if(!c.props)c.props=[];
+  c.checks.forEach(ph=>ph.items.forEach(i=>{if(i.date===undefined)i.date="";}));
+  document.getElementById("reflectTag").style.display=c.reflected?"":"none";
+  renderKotei();renderDayGrid("thisDays","thisDayList");renderDayGrid("nextDays","nextDayList");
+  renderChecks();renderMiles();renderTodos();renderProps();renderPhotos();
+  document.getElementById("aiOut").innerHTML="";document.getElementById("aiOutP").innerHTML="";
+}
+function renderKotei(){
+  document.getElementById("koteiPick").innerHTML=KOTEI.map(k=>
+    `<button class="${(cur.kotei||"順調")===k?"on":""}" onclick="cur.kotei='${k}';renderKotei()">${k}</button>`).join("");
+}
+function renderDayGrid(key,containerId){
+  const off=key==="nextDays"?7:0;
+  document.getElementById(containerId).innerHTML=cur[key].map((x,i)=>{
+    const cls=i===0?"sun":i===6?"sat":"";
+    const md=dayMD(cur.week,off,i);
+    return `<div class="day ${cls} ${x.off?"isoff":""}">
+      <span class="dl"><span class="dd">${md}</span><span class="dw">${x.d}</span></span>
+      <textarea class="dt" rows="1" placeholder="${x.off?"休工日":"予定"}" ${x.off?"disabled":""} oninput="cur.${key}[${i}].text=this.value;ag(this)">${esc(x.text)}</textarea>
+      <button class="offbtn ${x.off?"on":""}" onclick="toggleOff('${key}','${containerId}',${i})">休</button>
+    </div>`;}).join("");
+  document.querySelectorAll(`#${containerId} textarea`).forEach(ag);
+}
+function toggleOff(key,containerId,i){cur[key][i].off=!cur[key][i].off;renderDayGrid(key,containerId);}
+
+function renderChecks(){
+  document.getElementById("checkList").innerHTML=cur.checks.map((ph,pi)=>{
+    const done=ph.items.filter(i=>i.done).length;
+    const rows=ph.items.map((it,ii)=>{
+      const nameHtml=it.custom
+        ? `<input class="cname" value="${esc(it.name)}" placeholder="項目名" oninput="cur.checks[${pi}].items[${ii}].name=this.value">`
+        : `<label class="body" for="ck_${pi}_${ii}"><span class="cn">${esc(it.name)}</span>${it.note?`<span class="cnote">${esc(it.note)}</span>`:""}</label>`;
+      const dateHtml=ph.hasDate?`<input type="date" class="cdate" value="${it.date||""}" title="日付" onchange="cur.checks[${pi}].items[${ii}].date=this.value">`:"";
+      const delHtml=it.custom?`<button class="cdel" onclick="delCheckItem(${pi},${ii})" aria-label="削除">✕</button>`:"";
+      return `<div class="chk ${it.done?"on":""}">
+        <input type="checkbox" id="ck_${pi}_${ii}" ${it.done?"checked":""} onchange="cur.checks[${pi}].items[${ii}].done=this.checked;renderChecks()">
+        ${nameHtml}${dateHtml}${delHtml}</div>`;}).join("");
+    return `<div class="chkph">${esc(ph.phase)}<span class="chkcnt">${done}/${ph.items.length}</span></div>
+      <div class="chkgrid">${rows}</div>
+      <button class="chkadd" onclick="addCheckItem(${pi})">＋追加</button>`;
+  }).join("");
+}
+function addCheckItem(pi){const ph=cur.checks[pi];let name="";
+  if(ph.addLabel==="請求"){name=`請求${ph.items.length+1}回目`;}
+  ph.items.push({name,note:"",date:"",done:false,custom:true});renderChecks();}
+function delCheckItem(pi,ii){cur.checks[pi].items.splice(ii,1);renderChecks();}
+
+function renderMiles(){
+  const el=document.getElementById("mileList");
+  const list=cur.miles.map((m,idx)=>({...m,idx})).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
+  el.innerHTML=list.length?list.map(m=>`<div class="mrow">
+    <span class="mt">${esc(m.text)}</span><span class="md">${m.date?fmtD(m.date):"未定"}</span>
+    <button class="del" onclick="delMile(${m.idx})">削除</button></div>`).join("")
+    :`<div class="hint">まだありません。上で日付と内容を入れて「＋追加」で追加。</div>`;
+}
+function addMile(){const d=val("mDate"),t=val("mText").trim();if(!t){document.getElementById("mText").focus();return;}
+  cur.miles.push({date:d,text:t});setV("mDate","");setV("mText","");renderMiles();}
+function delMile(i){cur.miles.splice(i,1);renderMiles();}
+
+/* やることリスト */
+function renderTodos(){
+  const el=document.getElementById("todoList");if(!el)return;
+  el.innerHTML=cur.todos.map((t,i)=>`<div class="chk ${t.done?"on":""}">
+    <input type="checkbox" ${t.done?"checked":""} onchange="cur.todos[${i}].done=this.checked;renderTodos()">
+    <input class="cname" value="${esc(t.text)}" placeholder="やること" oninput="cur.todos[${i}].text=this.value">
+    <button class="cdel" onclick="delTodo(${i})" aria-label="削除">✕</button></div>`).join("")
+    ||`<div class="hint">「＋追加」で追加。済んだら✓、未完は翌週に引き継がれます。</div>`;
+}
+function addTodo(){cur.todos.push({text:"",done:false});renderTodos();}
+function delTodo(i){cur.todos.splice(i,1);renderTodos();}
+
+/* 物件・案件リスト */
+function renderProps(){
+  const el=document.getElementById("propList");if(!el)return;
+  el.innerHTML=cur.props.map((p,i)=>`<div class="prow">
+    <div class="pcol">
+      <input value="${esc(p.name)}" placeholder="物件・客先名" oninput="cur.props[${i}].name=this.value">
+      <input value="${esc(p.status||"")}" placeholder="状況（例：見積提出待ち）" oninput="cur.props[${i}].status=this.value">
+    </div>
+    <button class="cdel" onclick="delProp(${i})" aria-label="削除">✕</button></div>`).join("")
+    ||`<div class="hint">「＋追加」で追加。リストは翌週に引き継がれます。</div>`;
+}
+function addProp(){cur.props.push({name:"",status:""});renderProps();}
+function delProp(i){cur.props.splice(i,1);renderProps();}
+
+function renderPhotos(){
+  document.getElementById("photoGrid").innerHTML=cur.photos.map((p,i)=>`<div class="ph">
+    <div class="imgwrap"><img src="${p.data}" alt=""><button class="rm" onclick="delPhoto(${i})" aria-label="削除">✕</button></div>
+    <input class="cap" value="${esc(p.cap)}" placeholder="内容（例：南面 施工後）" oninput="cur.photos[${i}].cap=this.value"></div>`).join("")
+    +`<button class="addph" onclick="document.getElementById('photoInput').click()"><span class="ic">＋</span>写真をとる／えらぶ</button>`;
+}
+function onPhotos(ev){[...ev.target.files].forEach(f=>compress(f,d=>{cur.photos.push({data:d,cap:""});renderPhotos();}));ev.target.value="";}
+function compress(file,cb){const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{
+  const max=1200;let w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}
+  const cv=document.createElement("canvas");cv.width=w;cv.height=h;cv.getContext("2d").drawImage(img,0,0,w,h);
+  cb(cv.toDataURL("image/jpeg",0.65));};img.src=r.result;};r.readAsDataURL(file);}
+function delPhoto(i){cur.photos.splice(i,1);renderPhotos();}
+
+/* 音声 */
+let micBtnEl=null;
+document.addEventListener("focusin",e=>{const t=e.target;
+  if(t&&(t.tagName==="TEXTAREA"||(t.tagName==="INPUT"&&t.type!=="date"&&t.type!=="checkbox"&&t.type!=="file")))lastField=t;});
+function micField(id){const el=document.getElementById(id);if(el){el.focus();lastField=el;}micBtnEl=el?el.parentElement.querySelector(".micbtn"):null;toggleMic();}
+function micMsg(note,msg){const e=document.getElementById(note);if(e)e.innerHTML=`<div style="margin-top:10px;background:#FBF3DE;border:1px solid #EAD9A6;border-radius:8px;padding:11px 12px;font-size:13.5px;color:#7a5b00;line-height:1.7">${msg}</div>`;}
+const IS_IOS=/iP(hone|od|ad)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+function toggleMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;const mic=micBtnEl;
+  const fld=lastField||document.getElementById(curMode==="plan"?"tsThis":"fReport");
+  const note=curMode==="plan"?"aiOutP":"aiOut";
+  if(fld)fld.focus();
+  if(IS_IOS||!SR){
+    micMsg(note,"入力欄が開きました。<b>キーボードの🎤（音声入力キー）</b>を押して話すと、この欄に文字が入ります。<br><span style='color:#9a7b20'>※ iPhoneはこのマイクボタンでは話せない仕様のため、キーボードの🎤をお使いください。</span>");
+    return;
+  }
+  if(window.__rec){try{window.__rec.stop();}catch(e){}return;}
+  if(!lastField)lastField=fld;
+  let rec;try{rec=new SR();}catch(e){micMsg(note,"音声を開始できませんでした。<b>キーボードの🎤</b>をお使いください。");return;}
+  window.__rec=rec;rec.lang="ja-JP";rec.interimResults=false;rec.continuous=false;
+  if(mic)mic.classList.add("rec");
+  const done=()=>{window.__rec=null;if(mic)mic.classList.remove("rec");if(window.__micTO){clearTimeout(window.__micTO);window.__micTO=null;}};
+  window.__micTO=setTimeout(()=>{try{rec.stop();}catch(e){}done();},12000);
+  rec.onresult=e=>{const t=[...e.results].map(r=>r[0].transcript).join("");insertText(lastField,t);};
+  rec.onend=done;
+  rec.onerror=e=>{done();const er=e&&e.error;if(er==="not-allowed"||er==="service-not-allowed"){micMsg(note,"マイクの使用が許可されていません。ブラウザの設定でマイクを許可するか、<b>キーボードの🎤</b>をお使いください。");}else if(er&&er!=="aborted"&&er!=="no-speech"){micMsg(note,"この画面では音声が使えないようです。<b>キーボードの🎤</b>をお使いください。");}};
+  try{rec.start();}catch(e){done();micMsg(note,"音声を開始できませんでした。<b>キーボードの🎤</b>をお使いください。");}
+}
+function insertText(el,t){if(!el)return;const s=el.selectionStart??el.value.length,e=el.selectionEnd??el.value.length;
+  el.value=el.value.slice(0,s)+t+el.value.slice(e);el.dispatchEvent(new Event("input",{bubbles:true}));el.focus();ag(el);}
+
+function collect(){
+  const c=cur;c.mode=curMode;
+  if(curMode==="genba"){
+    c.name=val("fName").trim();c.kokiStart=val("fKokiStart");c.kokiEnd=val("fKokiEnd");c.deki=val("fDeki");c.riritsu=val("fRiritsu");
+    c.contract=moneyDigits(val("fContract"));c.budget01=moneyDigits(val("fBudget01"));c.budget02=moneyDigits(val("fBudget02"));
+    c.date=todayISO();c.tanto=val("fTanto");c.report=val("fReport");c.kenan=val("fKenan");c.issue=val("fIssue");
+  }else{c.name="TAIYOSHEET 週報";c.date=todayISO();c.tanto="";c.tsThis=val("tsThis");c.tsNext=val("tsNext");}
+}
+
+function buildText(c){
+  const L=[];
+  if(c.mode==="genba"){
+    L.push(`【週間報告】${c.name||"（物件名未記入）"}`);
+    const meta=[];if(c.kokiStart||c.kokiEnd)meta.push(`工期：${fmtD(c.kokiStart)||"…"} ～ ${fmtD(c.kokiEnd)||"…"}`);if(c.deki!=="")meta.push(`出来高：${c.deki}%`);if((c.riritsu+"").trim())meta.push(`利益率：${c.riritsu}%`);
+    if(meta.length)L.push(meta.join("　/　"));const sub=[];if(c.date)sub.push(`報告日：${fmtD(c.date)}`);if(c.tanto)sub.push(`担当：${c.tanto}`);if(sub.length)L.push(sub.join("　"));
+    const mo=[];if((c.contract+"").trim())mo.push(`請負金額：${yen(c.contract)}`);if((c.budget01+"").trim())mo.push(`実行予算01：${yen(c.budget01)}`);if((c.budget02+"").trim())mo.push(`実行予算02(現在)：${yen(c.budget02)}`);if(mo.length)L.push(mo.join("　/　"));
+    L.push("");
+    L.push("■ 今週の実績");c.thisDays.forEach((d,i)=>L.push(`　${dayMD(c.week,0,i)}（${d.d}）：${d.off?"休工日":(d.text.trim()||"―")}`));
+    L.push(`■ 工程状況：${c.kotei||"順調"}`);
+    if(c.report.trim())L.push(`■ 今週の報告\n${c.report}`);
+    L.push("■ 来週の工事予定");c.nextDays.forEach((d,i)=>L.push(`　${dayMD(c.week,7,i)}（${d.d}）：${d.off?"休工日":(d.text.trim()||"―")}`));
+    if(c.checks&&c.checks.length){L.push("■ 打合せ確認項目");c.checks.forEach(ph=>{const done=ph.items.filter(i=>i.done).length;L.push(`　${ph.phase}（${done}/${ph.items.length}）`);ph.items.forEach(i=>L.push(`　${i.done?"●":"○"} ${i.name}${i.date?" "+fmtD(i.date):""}`));});}
+    const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
+    if(ms.length){L.push("■ 今後の重要な予定");ms.forEach(m=>L.push(`　${m.text}　${m.date?fmtD(m.date):"未定"}`));}
+    if(c.kenan.trim())L.push(`■ 懸案事項 → 対応\n${c.kenan}`);
+    if(c.issue.trim())L.push(`■ クレーム・問い合わせ\n${c.issue}`);
+  }else{
+    L.push(`【TAIYOSHEET 週報】`);if(c.date)L.push(`報告日：${fmtD(c.date)}`);L.push("");
+    if((c.tsThis||"").trim())L.push(`■ 今週の予定（報告・課題・相談）\n${c.tsThis}`);
+    if((c.tsNext||"").trim())L.push(`■ 来週の予定（報告・課題・相談）\n${c.tsNext}`);
+    const td=(c.todos||[]).filter(t=>t.text.trim());if(td.length){L.push("■ やること");td.forEach(t=>L.push(`　${t.done?"●":"○"} ${t.text}`));}
+    const pr=(c.props||[]).filter(x=>x.name.trim());if(pr.length){L.push("■ 物件・案件リスト");pr.forEach(x=>L.push(`　・${x.name}${x.status?"　"+x.status:""}`));}
+  }
+  if(c.photos.length)L.push(`\n※ 写真 ${c.photos.length}枚 添付`);
+  return L.join("\n");
+}
+
+function sec(t,inner,cls){return inner?`<div class="sec2${cls?" "+cls:""}"><h4>${t}</h4>${inner}</div>`:"";}
+function daysHTML(arr,off,week){return arr.map((d,i)=>`<div class="dl2"><b>${dayMD(week,off||0,i)}（${d.d}）</b>${d.off?"休工日":(esc(d.text.trim())||"―")}</div>`).join("");}
+function buildSheetHTML(c){
+  let body="",head,metaHtml;
+  if(c.mode==="genba"){
+    const mp=[];if(c.kokiStart||c.kokiEnd)mp.push(`工期 ${fmtD(c.kokiStart)||"…"} ～ ${fmtD(c.kokiEnd)||"…"}`);if(c.deki!=="")mp.push(`出来高 ${c.deki}%`);if((c.riritsu+"").trim())mp.push(`利益率 ${c.riritsu}%`);
+    const sb=[];if(c.date)sb.push(`報告日 ${fmtD(c.date)}`);if(c.tanto)sb.push(`担当 ${esc(c.tanto)}`);
+    metaHtml=[mp.join("｜"),sb.join("　")].filter(Boolean).join("<br>")||"　";
+    const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);
+    if(mo.length)body+=sec("金額",mo.join(""));
+    body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
+    body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
+    if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`,"wide");
+    body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
+    if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="cl2 phh" style="margin-top:2px;font-weight:700">${ph.phase}（${done}/${ph.items.length}）</div>${items}</div>`;}).join("");body+=`<div class="sec2 breakok"><h4>打合せ確認項目</h4>${rows}</div>`;}
+    const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
+    if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""));
+    if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"wide");
+    if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"wide");
+    head=`週間報告　${esc(c.name)||"（物件名未記入）"}`;
+  }else{
+    if((c.tsThis||"").trim())body+=sec("今週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsThis)}</p>`,"wide");
+    if((c.tsNext||"").trim())body+=sec("来週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsNext)}</p>`,"wide");
+    const td=(c.todos||[]).filter(t=>t.text.trim());
+    if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
+    const pr=(c.props||[]).filter(x=>x.name.trim());
+    if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="cl2">・${esc(x.name)}${x.status?`　<span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
+    head=`TAIYOSHEET 週報`;metaHtml=c.date?`報告日 ${fmtD(c.date)}`:"　";
+  }
+  const photos=c.photos.length?`<div class="sec2 photosec"><h4>写真</h4><div class="sheet-photos">${c.photos.map(p=>`<figure><img src="${p.data}"><figcaption>${esc(p.cap||"")}</figcaption></figure>`).join("")}</div></div>`:"";
+  return `<div class="sheet"><div class="sheet-hd">${head}</div><div class="sheet-meta">${metaHtml}</div><div class="sheet-body">${body}${photos}</div></div>`;
+}
+function renderSheet(c){document.getElementById("sheet").innerHTML=buildSheetHTML(c);}
+
+async function aiSummarize(srcId,outId){
+  collect();const btn=document.getElementById(curMode==="plan"?"aiBtnP":"aiBtn");
+  btn.disabled=true;btn.textContent="AIがまとめ中…";
+  const ctx=[];
+  if(curMode==="genba"){cur.thisDays.filter(d=>!d.off&&d.text.trim()).forEach(d=>ctx.push(`${d.d}:${d.text}`));if(cur.kotei&&cur.kotei!=="順調")ctx.push(`工程:${cur.kotei}`);}
+  const src=[val(srcId),ctx.join(" / ")].filter(x=>x&&x.trim()).join("\n");
+  const prompt=`あなたは週報づくりの補助です。次の入力を、週報の「今週の報告」に載せる簡潔な箇条書きにしてください。
+【厳守】
+・各行を「・」で始める短い箇条書きにする（3〜6行程度、1行は短く）。
+・要点だけ。挨拶・前置き・感想・説明文は書かない。
+・情報が少なくても、書かれている事実だけを箇条書きにする。
+・「情報が必要」「教えてください」等の返答や質問は絶対にしない。
+・出力は箇条書きの本文のみ。
+=== 入力 ===
+${src||"（入力なし）"}`;
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:prompt}]})});
+    const data=await res.json();let txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
+    if(!txt)throw 0;
+    txt=txt.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>/^[・\-*•]/.test(l)?l.replace(/^[\-*•]\s?/,"・"):"・"+l).join("\n");
+    const out=document.getElementById(outId);out.dataset.txt=txt;
+    out.innerHTML=`<div style="white-space:pre-wrap;font-size:14px;line-height:1.7;background:#F1F4F9;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px">${esc(txt)}</div>
+      <button class="btn sub block" onclick="applyAI('${srcId}','${outId}')">この内容を採用</button>`;
+  }catch(e){document.getElementById(outId).innerHTML=`<div class="hint" style="margin-top:10px">うまくいきませんでした。少し待ってもう一度お試しください。（Claude内で開いていると使えます）</div>`;}
+  finally{btn.disabled=false;btn.textContent="AIでまとめる";}
+}
+function applyAI(srcId,outId){const o=document.getElementById(outId);const t=o.dataset.txt;if(!t)return;setV(srcId,t);ag(document.getElementById(srcId));o.innerHTML="";}
+function aiHereP(){const f=(lastField&&(lastField.id==="tsThis"||lastField.id==="tsNext"))?lastField.id:"tsThis";aiSummarize(f,"aiOutP");}
+
+function persist(){
+  if(!cur)return false;collect();if(!cur.name)return false;
+  let p=state.projects.find(x=>x.name===cur.name);
+  const meta=cur.mode==="genba"?("出来高 "+(cur.deki||"—")+"%"):"";
+  if(!p){p={id:uid(),name:cur.name,mode:cur.mode,meta};state.projects.unshift(p);}else{p.mode=cur.mode;p.meta=meta;}
+  cur.projectId=p.id;
+  state.reports=state.reports.filter(r=>!(r.projectId===p.id&&r.week===cur.week));
+  state.reports.unshift(JSON.parse(JSON.stringify(cur)));
+  save();return true;
+}
+function finish(){
+  if(!persist()){alert(curMode==="genba"?"物件名を入れてください。":"内容を入れてください。");return;}
+  renderSheet(cur);go("preview");
+}
+function editAgain(){go("editor");showStep();}
+function printPDF(){window.print();}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+async function ensureLibs(){
+  if(typeof html2canvas==="undefined"){try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");}catch(e){}}
+  if(!window.jspdf){try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");}catch(e){}}
+  return typeof html2canvas!=="undefined"&&!!window.jspdf;
+}
+async function generatePDF(){
+  const btn=document.querySelector("#fabPreview .btn.go");const o=btn?btn.textContent:"";
+  const stage=document.getElementById("pdfStage");
+  if(btn){btn.disabled=true;btn.textContent="PDF作成中…";}
+  const ok=await ensureLibs();
+  if(!ok){if(btn){btn.disabled=false;btn.textContent=o;}alert("PDF機能の読み込みに失敗しました。通信環境の良い場所で開き直すか、SafariかChromeで開いてお試しください。");return;}
+  stage.className="pdfmode";stage.innerHTML=buildSheetHTML(cur);
+  try{
+    const imgs=[...stage.querySelectorAll("img")];
+    await Promise.all(imgs.map(im=>im.complete?Promise.resolve():new Promise(r=>{im.onload=im.onerror=r;})));
+    await new Promise(r=>setTimeout(r,80));
+    const target=stage.querySelector(".sheet");
+    const canvas=await html2canvas(target,{scale:2,backgroundColor:"#ffffff",useCORS:true,width:794,windowWidth:794});
+    const {jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","a4");
+    const pw=210,ph=297;
+    const scale=canvas.width/target.offsetWidth;
+    const trect=target.getBoundingClientRect();
+    const hz=[...target.querySelectorAll(".cl2,.dl2,.sec2 h4,.sec2 p,figure")].map(el=>{const r=el.getBoundingClientRect();return {t:(r.top-trect.top)*scale,b:(r.bottom-trect.top)*scale};}).filter(h=>h.b>h.t+1);
+    const pageH=ph*canvas.width/pw;
+    let y=0,page=0;
+    while(y<canvas.height-1&&page<50){
+      let cut=Math.min(y+pageH,canvas.height);
+      let changed=true,guard=0;
+      while(changed&&guard++<800){changed=false;for(const h of hz){if(h.t>y+2&&h.t<cut-0.5&&h.b>cut+0.5){cut=h.t;changed=true;}}}
+      if(cut<=y+12)cut=Math.min(y+pageH,canvas.height);
+      const sliceH=Math.max(1,Math.round(cut-y));
+      const c2=document.createElement("canvas");c2.width=canvas.width;c2.height=sliceH;
+      const ctx=c2.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c2.width,sliceH);
+      ctx.drawImage(canvas,0,Math.round(y),canvas.width,sliceH,0,0,canvas.width,sliceH);
+      const img=c2.toDataURL("image/jpeg",0.9);
+      if(page>0)pdf.addPage();
+      pdf.addImage(img,"JPEG",0,0,pw,sliceH*pw/canvas.width);
+      y=cut;page++;
+    }
+    const blob=pdf.output("blob");
+    const fname=`週報_${(cur.name||"report").replace(/[\\\/:*?"<>|\s]/g,"")}_${todayISO()}.pdf`;
+    const file=new File([blob],fname,{type:"application/pdf"});
+    const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+    let shared=false;
+    if(isMobile&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:"週報"});shared=true;}catch(e){shared=false;}}
+    if(!shared){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);if(!isMobile)alert("PDFをダウンロードしました。ブラウザ右上のダウンロード（↓）か「ダウンロード」フォルダから開けます。LINE WORKSのトークに、このPDFを添付して送ってください。");}
+  }catch(e){alert("PDF作成に失敗しました。もう一度お試しください。");}
+  finally{if(btn){btn.disabled=false;btn.textContent=o;}stage.innerHTML="";stage.className="";}
+}
+function makePDF(){generatePDF();}
+function copyReport(){navigator.clipboard.writeText(buildText(cur)).then(()=>alert("テキストをコピーしました。")).catch(()=>alert("コピーできませんでした。"));}
+
+async function save(){try{if(window.storage&&window.storage.set){await window.storage.set(KEY,JSON.stringify(state),false);return;}}catch(e){}try{window.__mem=JSON.stringify(state);}catch(e){}}
+const LEGACY_KEYS=["taiyo-weekly-maker-v11","taiyo-weekly-maker-v10","taiyo-weekly-maker-v9","taiyo-weekly-maker-v8","taiyo-weekly-maker-v7","taiyo-weekly-maker-v6"];
+async function load(){
+  try{if(window.storage&&window.storage.get){
+    const r=await window.storage.get(KEY,false);
+    if(r&&r.value){state=JSON.parse(r.value);return;}
+    for(const k of LEGACY_KEYS){try{const o=await window.storage.get(k,false);if(o&&o.value){state=JSON.parse(o.value);await save();return;}}catch(e){}}
+  }}catch(e){}
+  try{if(window.__mem)state=JSON.parse(window.__mem);}catch(e){}
+}
+function exportData(){const b=new Blob([JSON.stringify(state)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`週報データ_${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href);}
+function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);state={projects:d.projects||[],reports:d.reports||[]};save();renderHome();}catch(e){alert("読み込めませんでした。");}};r.readAsText(f);ev.target.value="";}
+function loadSample(){
+  const wkPrev=weekKey(new Date(Date.now()-7*864e5));
+  const nextDays=DAYS.map((d,i)=>({d,off:i===0,text:i===0?"":["","シール打設（東面）","鉄部塗装","防水下地処理","長尺シート貼り","高圧洗浄","足場点検"][i]||""}));
+  const checks=defChecks();
+  checks[0].items.forEach(it=>it.done=true);                 // 着工前 全済
+  const tra={ "足場仮設工事":"2025-09-04","下地調査":"2025-09-08","下地補修工事":"2025-09-16","高圧洗浄工事":"2025-10-06","鉄部塗装工事":"2025-10-14","外壁塗装工事":"2025-10-27" };
+  checks[1].items.forEach(it=>{if(tra[it.name]){it.date=tra[it.name];it.done=true;}}); // 工種開始日
+  checks[3].items.forEach((it,i)=>{it.date=["2025-09-30","2025-11-30","2026-02-28"][i]||"";it.done=i<1;}); // 入金
+  state={projects:[{id:"p1",name:"●●●大規模修繕工事",mode:"genba",meta:"出来高 65%"},{id:"p2",name:"TAIYOSHEET 週報",mode:"plan",meta:""}],
+   reports:[{id:"r1",projectId:"p1",name:"●●●大規模修繕工事",week:wkPrev,mode:"genba",
+     date:toLocalISO(new Date(Date.now()-7*864e5)),kokiStart:"2025-09-01",kokiEnd:"2026-02-14",deki:"60",riritsu:"15.5",tanto:"太陽 太郎",
+     kotei:"やや遅延",report:"塗装工事が天候で遅延気味。来週応援を希望。",thisDays:blankDays(),nextDays,checks,
+     miles:[{date:"2026-01-11",text:"足場解体前検査"},{date:"2026-02-06",text:"竣工検査"}],
+     kenan:"バルコニー防水の納まりを監理者と協議 ⇒ 11/20打合せ済",issue:"",tasks:[],pNext:"",pAdhoc:"",photos:[],reflected:false}]};
+  save();renderHome();
+}
+
+document.addEventListener("input",e=>{if(e.target&&e.target.tagName==="TEXTAREA")ag(e.target);});
+function normalizeState(){
+  const def={};CHECK_DEF.forEach(p=>def[p.phase]={hasDate:p.hasDate,addLabel:p.addLabel||""});
+  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";});});});
+}
+(async()=>{await load();normalizeState();renderHome();go("home");})();
+</script>
+</body>
+</html>
