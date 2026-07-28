@@ -205,9 +205,11 @@
   body.wideedit .mobonly{display:none}
   body:not(.wideedit) .wideonly{display:none}
   @media (min-width:900px){
-    body.wideedit .app{max-width:780px}
-    body.wideedit .fab{max-width:780px}
-    body.wideedit .stepsec{margin-bottom:4px}
+    body.wideedit .app{max-width:1000px}
+    body.wideedit .fab{max-width:1000px}
+    body.wideedit .pad{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start;grid-auto-flow:row dense}
+    body.wideedit .stepsec{margin-bottom:4px;min-width:0}
+    body.wideedit #s_checkG,body.wideedit #s_photo{grid-column:1 / -1}   /* 確認項目・写真は横幅いっぱい */
   }
   @media print{
     html,body{background:#fff!important;width:210mm!important;margin:0!important;padding:0!important}
@@ -1310,7 +1312,16 @@ async function generatePDF(){
       const a=rel(h4),b=rel(nx),t=Math.min(a.t,b.t),bt=Math.max(a.b,b.b);
       if(bt>t+1)hz.push({t,b:bt});
     });
-    const pageH=ph*canvas.width/pw;
+    const pageHnat=ph*canvas.width/pw;   // A4 1ページ分のキャンバス行数（原寸）
+    const naturalPages=Math.max(1,Math.ceil((canvas.height-1)/pageHnat));
+    // 内容が1ページを少しだけ超える場合、全体をわずかに縮小して1枚少なく収める（スカスカな最終ページを防ぐ）
+    let dispScale=1,pageH=pageHnat;
+    if(naturalPages>=2){
+      const lastFill=(canvas.height-(naturalPages-1)*pageHnat)/pageHnat;   // 最終ページの埋まり具合
+      const need=canvas.height/((naturalPages-1)*pageHnat);                // 1枚減らして収めるのに必要な縮小率の逆数
+      if(lastFill<0.55&&need<=1.25){dispScale=1/need;pageH=pageHnat/dispScale;}
+    }
+    const imgWmm=pw*dispScale,imgXmm=(pw-imgWmm)/2;   // 縮小時は左右に均等マージンを付けて中央寄せ
     let y=0,page=0;
     while(y<canvas.height-1&&page<50){
       let cut=Math.min(y+pageH,canvas.height);
@@ -1323,7 +1334,7 @@ async function generatePDF(){
       ctx.drawImage(canvas,0,Math.round(y),canvas.width,sliceH,0,0,canvas.width,sliceH);
       const img=c2.toDataURL("image/jpeg",0.9);
       if(page>0)pdf.addPage();
-      pdf.addImage(img,"JPEG",0,0,pw,sliceH*pw/canvas.width);
+      pdf.addImage(img,"JPEG",imgXmm,0,imgWmm,sliceH*imgWmm/canvas.width);
       y=cut;page++;
     }
     const blob=pdf.output("blob");
