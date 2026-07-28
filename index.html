@@ -1371,14 +1371,27 @@ async function generatePDF(){
 function makePDF(){generatePDF();}
 function copyReport(){navigator.clipboard.writeText(buildText(cur)).then(()=>alert("テキストをコピーしました。")).catch(()=>alert("コピーできませんでした。"));}
 
-async function save(){try{if(window.storage&&window.storage.set){await window.storage.set(KEY,JSON.stringify(state),false);return;}}catch(e){}try{window.__mem=JSON.stringify(state);}catch(e){}}
+async function save(){
+  const data=JSON.stringify(state);
+  try{localStorage.setItem(KEY,data);}catch(e){}                 // 通常ブラウザ：端末に確実に保存
+  try{if(window.storage&&window.storage.set){await window.storage.set(KEY,data,false);}}catch(e){}  // 対応環境では併用
+  try{window.__mem=data;}catch(e){}                              // 最終フォールバック（同一セッション内）
+}
 const LEGACY_KEYS=["taiyo-weekly-maker-v11","taiyo-weekly-maker-v10","taiyo-weekly-maker-v9","taiyo-weekly-maker-v8","taiyo-weekly-maker-v7","taiyo-weekly-maker-v6"];
 async function load(){
+  // 1) 対応環境のストレージ
   try{if(window.storage&&window.storage.get){
     const r=await window.storage.get(KEY,false);
     if(r&&r.value){state=JSON.parse(r.value);return;}
-    for(const k of LEGACY_KEYS){try{const o=await window.storage.get(k,false);if(o&&o.value){state=JSON.parse(o.value);await save();return;}}catch(e){}}
   }}catch(e){}
+  // 2) ブラウザ標準のlocalStorage（通常配布時はここに保存される）
+  try{const v=localStorage.getItem(KEY);if(v){state=JSON.parse(v);return;}}catch(e){}
+  // 3) 旧バージョンのデータを引き継ぎ（storage / localStorage 両方を確認）
+  for(const k of LEGACY_KEYS){
+    try{if(window.storage&&window.storage.get){const o=await window.storage.get(k,false);if(o&&o.value){state=JSON.parse(o.value);await save();return;}}}catch(e){}
+    try{const v=localStorage.getItem(k);if(v){state=JSON.parse(v);await save();return;}}catch(e){}
+  }
+  // 4) 最終フォールバック（同一セッション内のみ）
   try{if(window.__mem)state=JSON.parse(window.__mem);}catch(e){}
 }
 function exportData(){const b=new Blob([JSON.stringify(state)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`週報データ_${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href);}
