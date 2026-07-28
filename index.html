@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache">
 <title>株式会社太陽 週報</title>
 <style>
   :root{
@@ -204,6 +205,7 @@
   body.wideedit .stepper{display:none}
   body.wideedit .mobonly{display:none}
   body:not(.wideedit) .wideonly{display:none}
+  .verstamp{font-size:11px;color:var(--muted);margin-top:8px;opacity:.8}
   #livePreview{display:none}
   @media (min-width:900px){
     body.wideedit .app{max-width:1180px}
@@ -686,6 +688,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="hero">
       <div class="hero-t">今週の週報をつくる</div>
       <div class="hero-s">物件をえらんで、写真とチェックだけ。先週の予定は自動で引き継がれます。</div>
+      <div class="verstamp">更新 2026-07-28（最新版）</div>
     </div>
     <div class="sec-label">物件・案件 <span class="c" id="homeCount"></span><span class="hstatus" id="homeStatus" style="display:none"></span></div>
     <div id="projList"></div>
