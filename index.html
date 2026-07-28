@@ -204,12 +204,17 @@
   body.wideedit .stepper{display:none}
   body.wideedit .mobonly{display:none}
   body:not(.wideedit) .wideonly{display:none}
+  #livePreview{display:none}
   @media (min-width:900px){
-    body.wideedit .app{max-width:1000px}
-    body.wideedit .fab{max-width:1000px}
-    body.wideedit .pad{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start;grid-auto-flow:row dense}
-    body.wideedit .stepsec{margin-bottom:4px;min-width:0}
-    body.wideedit #s_checkG,body.wideedit #s_photo{grid-column:1 / -1}   /* 確認項目・写真は横幅いっぱい */
+    body.wideedit .app{max-width:1180px}
+    body.wideedit .fab{max-width:1180px}
+    /* 左：入力（1列で見やすく）／右：PDFのライブプレビュー（仕上がりを見ながら入力） */
+    body.wideedit #editor{display:flex;gap:20px;align-items:flex-start}
+    body.wideedit #editor>.pad{flex:0 0 clamp(380px,42%,520px);min-width:0}
+    body.wideedit #livePreview{display:block;flex:1 1 auto;position:sticky;top:74px;align-self:flex-start;
+      max-height:calc(100vh - 96px);overflow:auto;background:#EEF1F6;border:1px solid var(--line);border-radius:10px;padding:14px}
+    body.wideedit #livePreview .livebox{margin:0 auto;background:#fff;box-shadow:0 2px 10px rgba(16,35,63,.12)}
+    body.wideedit #livePreview::before{content:"プレビュー（このままPDFになります）";display:block;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:700}
   }
   @media print{
     html,body{background:#fff!important;width:210mm!important;margin:0!important;padding:0!important}
@@ -825,6 +830,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       </div>
 
     </div>
+    <div id="livePreview" aria-hidden="true"></div>
   </div>
 
   <!-- PREVIEW -->
@@ -992,12 +998,26 @@ function showStep(){
   document.getElementById("nextBtn").textContent=(step===seq.length-1)?"できた → PDF":"次へ →";
   window.scrollTo(0,0);setTimeout(agAll,20);
 }
-function showAllSteps(){                          // PC：ステップを使わず全セクションを一覧表示（データ・PDFはスマホと同一）
+function showAllSteps(){                          // PC：ステップを使わず全セクションを左に一覧表示＋右にライブプレビュー（データ・PDFはスマホと同一）
   document.body.classList.add("wideedit");
   const seq=STEPS[curMode];
   document.querySelectorAll(".stepsec").forEach(el=>el.style.display="none");
   seq.forEach(id=>{const e=document.getElementById(id);if(e)e.style.display="";});
-  setTimeout(agAll,20);
+  setTimeout(agAll,20);setTimeout(renderLive,30);
+}
+let liveTimer=null;
+function scheduleLive(){if(!document.body.classList.contains("wideedit"))return;clearTimeout(liveTimer);liveTimer=setTimeout(renderLive,200);}
+function renderLive(){                            // 右ペインに、実際のPDFと同じ体裁(.pdfmode)で仕上がりを縮小表示
+  if(!document.body.classList.contains("wideedit")||!cur)return;
+  collect();
+  const lp=document.getElementById("livePreview");if(!lp)return;
+  const paneW=Math.max(240,lp.clientWidth-28);   // 左右padding分を差し引く
+  const s=Math.min(1,paneW/794);
+  lp.innerHTML='<div class="livebox"><div class="livescale pdfmode">'+buildSheetHTML(cur)+'</div></div>';
+  const box=lp.querySelector(".livebox"),sc=lp.querySelector(".livescale"),sheet=sc.querySelector(".sheet");
+  sc.style.cssText="width:794px;transform:scale("+s+");transform-origin:top left";
+  const natH=sheet?sheet.offsetHeight:0;
+  box.style.cssText="position:relative;width:"+Math.round(794*s)+"px;height:"+Math.round(natH*s)+"px;overflow:hidden";
 }
 function nextStep(){
   collect();
@@ -1107,6 +1127,7 @@ function renderPhotos(){
     <div class="imgwrap"><img src="${p.data}" alt=""><button class="rm" onclick="delPhoto(${i})" aria-label="削除">✕</button></div>
     <input class="cap" value="${esc(p.cap)}" placeholder="内容（例：南面 施工後）" oninput="cur.photos[${i}].cap=this.value"></div>`).join("")
     +`<button class="addph" onclick="document.getElementById('photoInput').click()"><span class="ic">＋</span>写真をとる／えらぶ</button>`;
+  scheduleLive();
 }
 function onPhotos(ev){[...ev.target.files].forEach(f=>compress(f,d=>{cur.photos.push({data:d,cap:""});renderPhotos();}));ev.target.value="";}
 function compress(file,cb){const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{
@@ -1380,6 +1401,8 @@ function loadSample(){
 }
 
 document.addEventListener("input",e=>{if(e.target&&e.target.tagName==="TEXTAREA")ag(e.target);});
+// PCのライブプレビュー更新（入力・選択・ボタン操作すべてを拾う。処理はデバウンス）
+["input","change","click"].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest("#editor"))scheduleLive();}));
 function normalizeState(){
   const def={};CHECK_DEF.forEach(p=>def[p.phase]={hasDate:p.hasDate,addLabel:p.addLabel||""});
   (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";});});});
