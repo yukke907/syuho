@@ -1195,17 +1195,17 @@ function buildSheetHTML(c){
     if(mo.length)body+=sec("金額",mo.join(""));
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
-    if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`,"wide");
+    if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`,"breakok");
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
     if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="cl2 phh" style="margin-top:2px;font-weight:700">${ph.phase}（${done}/${ph.items.length}）</div>${items}</div>`;}).join("");body+=`<div class="sec2 breakok"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
     if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""));
-    if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"wide");
-    if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"wide");
+    if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"breakok");
+    if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"breakok");
     head=`週間報告　${esc(c.name)||"（物件名未記入）"}`;
   }else{
-    if((c.tsThis||"").trim())body+=sec("今週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsThis)}</p>`,"wide");
-    if((c.tsNext||"").trim())body+=sec("来週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsNext)}</p>`,"wide");
+    if((c.tsThis||"").trim())body+=sec("今週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsThis)}</p>`,"breakok");
+    if((c.tsNext||"").trim())body+=sec("来週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsNext)}</p>`,"breakok");
     const td=(c.todos||[]).filter(t=>t.text.trim());
     if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
     const pr=(c.props||[]).filter(x=>x.name.trim());
