@@ -200,6 +200,15 @@
   .pdfmode .sheet-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-items:start}
   .pdfmode .sheet-photos img{width:100%;aspect-ratio:4/3;height:auto;object-fit:cover;border:1px solid var(--line);border-radius:4px;display:block}
   .pdfmode .sheet-photos figcaption{font-size:13px;margin-top:5px;color:var(--muted)}
+  /* PC（広い画面）は「次へ」を使わず全項目を1画面でまとめて入力できるようにする（PDF出力はスマホと同一） */
+  body.wideedit .stepper{display:none}
+  body.wideedit .mobonly{display:none}
+  body:not(.wideedit) .wideonly{display:none}
+  @media (min-width:900px){
+    body.wideedit .app{max-width:780px}
+    body.wideedit .fab{max-width:780px}
+    body.wideedit .stepsec{margin-bottom:4px}
+  }
   @media print{
     html,body{background:#fff!important;width:210mm!important;margin:0!important;padding:0!important}
     body *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -827,8 +836,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 <!-- 下部の操作 -->
 <div class="fab" id="fabHome"><button class="btn" onclick="newReport()">＋ 新しい週報をつくる</button></div>
 <div class="fab" id="fabEdit" style="display:none"><div class="rowbtn">
-  <button class="btn nav" onclick="prevStep()">もどる</button>
-  <button class="btn go" id="nextBtn" onclick="nextStep()">次へ →</button>
+  <button class="btn nav mobonly" onclick="prevStep()">もどる</button>
+  <button class="btn go mobonly" id="nextBtn" onclick="nextStep()">次へ →</button>
+  <button class="btn nav wideonly" onclick="go('home')">ホーム</button>
+  <button class="btn go wideonly" onclick="finish()">できた → PDF</button>
 </div></div>
 <div class="fab" id="fabPreview" style="display:none"><div class="rowbtn three">
   <button class="btn nav" onclick="editAgain()">もどる</button>
@@ -891,6 +902,7 @@ function go(s){
   document.getElementById("fabPreview").style.display=s==="preview"?"":"none";
   document.getElementById("backBtn").style.display=s==="home"?"none":"";
   document.getElementById("barTitle").textContent=s==="home"?"株式会社太陽 週報":s==="preview"?"できあがり":"週報をつくる";
+  if(s!=="editor")document.body.classList.remove("wideedit");
   if(s==="home")renderHome();
   window.scrollTo(0,0);
 }
@@ -965,7 +977,10 @@ function setMode(m){
   if(document.getElementById("editor").style.display!=="none"){step=0;showStep();}
 }
 
+function isWide(){return window.matchMedia("(min-width:900px)").matches;}
 function showStep(){
+  if(isWide()){showAllSteps();return;}          // PC：全項目を1画面で表示
+  document.body.classList.remove("wideedit");
   const seq=STEPS[curMode];if(step>=seq.length)step=seq.length-1;if(step<0)step=0;
   document.querySelectorAll(".stepsec").forEach(el=>el.style.display="none");
   document.getElementById(seq[step]).style.display="";
@@ -974,6 +989,13 @@ function showStep(){
   document.getElementById("stepFill").style.width=Math.round((step+1)/seq.length*100)+"%";
   document.getElementById("nextBtn").textContent=(step===seq.length-1)?"できた → PDF":"次へ →";
   window.scrollTo(0,0);setTimeout(agAll,20);
+}
+function showAllSteps(){                          // PC：ステップを使わず全セクションを一覧表示（データ・PDFはスマホと同一）
+  document.body.classList.add("wideedit");
+  const seq=STEPS[curMode];
+  document.querySelectorAll(".stepsec").forEach(el=>el.style.display="none");
+  seq.forEach(id=>{const e=document.getElementById(id);if(e)e.style.display="";});
+  setTimeout(agAll,20);
 }
 function nextStep(){
   collect();
@@ -1351,6 +1373,10 @@ function normalizeState(){
   const def={};CHECK_DEF.forEach(p=>def[p.phase]={hasDate:p.hasDate,addLabel:p.addLabel||""});
   (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";});});});
 }
+// 画面幅が変わったら（PC⇔スマホ表示の切替・回転）編集画面を作り直す（入力内容は保持）
+window.matchMedia("(min-width:900px)").addEventListener("change",()=>{
+  if(cur&&document.getElementById("editor").style.display!=="none"){collect();showStep();}
+});
 (async()=>{await load();normalizeState();renderHome();go("home");})();
 </script>
 </body>
