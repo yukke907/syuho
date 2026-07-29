@@ -1222,9 +1222,9 @@ function buildSheetHTML(c){
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
     if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="cl2 phh" style="margin-top:2px;font-weight:700">${ph.phase}（${done}/${ph.items.length}）</div>${items}</div>`;}).join("");body+=`<div class="sec2 breakok"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
-    if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""));
-    if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"breakok");
-    if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"breakok");
+    if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""),"wide");
+    if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"wide");
+    if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"wide");
     head=`週間報告　${esc(c.name)||"（物件名未記入）"}`;
   }else{
     if((c.tsThis||"").trim())body+=sec("今週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsThis)}</p>`,"breakok");
@@ -1318,9 +1318,11 @@ async function generatePDF(){
     if(bodyEl){
       const bs=getComputedStyle(bodyEl),bodyRect=bodyEl.getBoundingClientRect();
       const padT=parseFloat(bs.paddingTop)||0,padB=parseFloat(bs.paddingBottom)||0;
-      const phSec=target.querySelector(".photosec");
+      // 全幅セクション（.wide／写真）の手前で線を止める（全幅部分は2列ではないため線を引かない）
+      const spanEls=[...target.querySelectorAll(".sec2.wide,.sec2.photosec")];
+      let spanTop=Infinity;spanEls.forEach(el=>{const tp=el.getBoundingClientRect().top;if(tp<spanTop)spanTop=tp;});
       const rTop=(bodyRect.top-trect.top+padT)*scale;
-      const rBot=((phSec?phSec.getBoundingClientRect().top:bodyRect.bottom-padB)-trect.top)*scale;
+      const rBot=((isFinite(spanTop)?spanTop:bodyRect.bottom-padB)-trect.top)*scale;
       if(rBot>rTop+2){
         const lw=Math.max(1,Math.round(scale)),cx=Math.round(canvas.width/2),cctx=canvas.getContext("2d");
         cctx.save();cctx.setTransform(1,0,0,1,0,0);   // html2canvasが残すscale変換をリセット（デバイスピクセルで描く）
@@ -1335,6 +1337,8 @@ async function generatePDF(){
       const a=rel(h4),b=rel(nx),t=Math.min(a.t,b.t),bt=Math.max(a.b,b.b);
       if(bt>t+1)hz.push({t,b:bt});
     });
+    // 全幅セクション（今後の重要な予定・懸案事項など）は丸ごと1かたまりにして、見出しと中身がページで分かれないようにする
+    target.querySelectorAll(".sec2.wide").forEach(s=>{const r=rel(s);if(r.b>r.t+1)hz.push(r);});
     const pageHnat=ph*canvas.width/pw;   // A4 1ページ分のキャンバス行数（原寸）
     const naturalPages=Math.max(1,Math.ceil((canvas.height-1)/pageHnat));
     // 内容が1ページを少しだけ超える場合、全体をわずかに縮小して1枚少なく収める（スカスカな最終ページを防ぐ）
