@@ -194,6 +194,8 @@
   .pdfmode .grp-blk{break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px}
   .pdfmode .sec2 h4{font-size:16px;margin:0 0 7px;border-left:none;padding-left:0;border-bottom:2px solid var(--orange);display:table;padding-bottom:3px}
   .pdfmode .sec2.wide{column-span:all;-webkit-column-span:all;margin-top:6px}
+  .pdfmode .tailwrap{column-span:all;-webkit-column-span:all;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3;margin-top:12px}
+  .pdfmode .tailwrap .sec2{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 12px}
   .pdfmode .sec2 p{font-size:15px;line-height:1.8}
   .pdfmode .dl2{font-size:15px;padding:2px 0}.pdfmode .dl2 b{min-width:3.4em}
   .pdfmode .cl2{font-size:15px;padding:2px 0}
@@ -235,6 +237,8 @@
     .sheet-body .sec2.photosec{column-span:all;-webkit-column-span:all;margin-top:16px}
     .sec2 h4{font-size:16px;margin:0 0 7px;border-left:none;padding-left:0;border-bottom:2px solid var(--orange);display:table;padding-bottom:3px}
     .sec2.wide{column-span:all;-webkit-column-span:all;margin-top:6px}
+    .tailwrap{column-span:all;-webkit-column-span:all;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3;margin-top:12px}
+    .tailwrap .sec2{break-inside:avoid;page-break-inside:avoid;margin:0 0 12px}
     .sec2 p{font-size:15px;line-height:1.8}
     .dl2{font-size:15px;padding:2px 0} .dl2 b{min-width:3.4em}
     .cl2{font-size:15px;padding:2px 0}
@@ -1222,9 +1226,11 @@ function buildSheetHTML(c){
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
     if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="cl2 phh" style="margin-top:2px;font-weight:700">${ph.phase}（${done}/${ph.items.length}）</div>${items}</div>`;}).join("");body+=`<div class="sec2 breakok"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
-    if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""),"wide");
-    if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"wide");
-    if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"wide");
+    let tail="";
+    if(ms.length)tail+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""));
+    if(c.kenan.trim())tail+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`);
+    if(c.issue.trim())tail+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`);
+    if(tail)body+=`<div class="tailwrap">${tail}</div>`;   // 全幅の中で内部2列（中央線を通しつつ、まとまりごと動いて取り残しを防ぐ）
     head=`週間報告　${esc(c.name)||"（物件名未記入）"}`;
   }else{
     if((c.tsThis||"").trim())body+=sec("今週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsThis)}</p>`,"breakok");
@@ -1318,8 +1324,8 @@ async function generatePDF(){
     if(bodyEl){
       const bs=getComputedStyle(bodyEl),bodyRect=bodyEl.getBoundingClientRect();
       const padT=parseFloat(bs.paddingTop)||0,padB=parseFloat(bs.paddingBottom)||0;
-      // 全幅セクション（.wide／写真）の手前で線を止める（全幅部分は2列ではないため線を引かない）
-      const spanEls=[...target.querySelectorAll(".sec2.wide,.sec2.photosec")];
+      // 写真の手前まで線を引く（本文＝2列＋tailwrapの内部2列はすべて中央線を通す。写真は全幅なので線なし）
+      const spanEls=[...target.querySelectorAll(".sec2.photosec")];
       let spanTop=Infinity;spanEls.forEach(el=>{const tp=el.getBoundingClientRect().top;if(tp<spanTop)spanTop=tp;});
       const rTop=(bodyRect.top-trect.top+padT)*scale;
       const rBot=((isFinite(spanTop)?spanTop:bodyRect.bottom-padB)-trect.top)*scale;
@@ -1337,8 +1343,8 @@ async function generatePDF(){
       const a=rel(h4),b=rel(nx),t=Math.min(a.t,b.t),bt=Math.max(a.b,b.b);
       if(bt>t+1)hz.push({t,b:bt});
     });
-    // 全幅セクション（今後の重要な予定・懸案事項など）は丸ごと1かたまりにして、見出しと中身がページで分かれないようにする
-    target.querySelectorAll(".sec2.wide").forEach(s=>{const r=rel(s);if(r.b>r.t+1)hz.push(r);});
+    // 末尾のまとまり（tailwrap）と全幅セクションは丸ごと1かたまりにして、途中で分割・取り残しが起きないようにする
+    target.querySelectorAll(".tailwrap,.sec2.wide").forEach(s=>{const r=rel(s);if(r.b>r.t+1)hz.push(r);});
     const pageHnat=ph*canvas.width/pw;   // A4 1ページ分のキャンバス行数（原寸）
     const naturalPages=Math.max(1,Math.ceil((canvas.height-1)/pageHnat));
     // 内容が1ページを少しだけ超える場合、全体をわずかに縮小して1枚少なく収める（スカスカな最終ページを防ぐ）
