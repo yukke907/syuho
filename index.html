@@ -747,9 +747,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="grp">
           <div class="gh">今週の報告</div>
           <textarea id="fReport" placeholder="例：塗装工事が遅延気味、応援希望。近隣挨拶を実施。"></textarea>
-          <button class="btn sub block" onclick="aiSummarize('fReport','aiOut')" id="aiBtn">AIでまとめる</button>
+          <button class="btn sub block" onclick="aiSummarize('fReport','aiOut')" id="aiBtn">箇条書きに整える</button>
           <div id="aiOut"></div>
-          <div class="hint">音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。メモ書きでも「AIでまとめる」で整います。</div>
+          <div class="hint">音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。メモ書きを「箇条書きに整える」で整えられます。</div>
         </div>
       </div>
 
@@ -804,9 +804,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <textarea id="tsNext" placeholder=""></textarea>
         </div>
         <div class="grp">
-          <button class="btn sub block" id="aiBtnP" onclick="aiHereP()">AIでまとめる</button>
+          <button class="btn sub block" id="aiBtnP" onclick="aiHereP()">箇条書きに整える</button>
           <div id="aiOutP"></div>
-          <div class="hint">音声はキーボードの🎤（音声入力）で。書いた欄を選んで「AIでまとめる」を押すと短い箇条書きに整います。</div>
+          <div class="hint">音声はキーボードの🎤（音声入力）で。書いた欄を選んで「箇条書きに整える」を押すと箇条書きになります。</div>
         </div>
       </div>
 
@@ -1248,32 +1248,21 @@ function buildSheetHTML(c){
 }
 function renderSheet(c){document.getElementById("sheet").innerHTML=buildSheetHTML(c);}
 
-async function aiSummarize(srcId,outId){
-  collect();const btn=document.getElementById(curMode==="plan"?"aiBtnP":"aiBtn");
-  btn.disabled=true;btn.textContent="AIがまとめ中…";
-  const ctx=[];
-  if(curMode==="genba"){cur.thisDays.filter(d=>!d.off&&d.text.trim()).forEach(d=>ctx.push(`${d.d}:${d.text}`));if(cur.kotei&&cur.kotei!=="順調")ctx.push(`工程:${cur.kotei}`);}
-  const src=[val(srcId),ctx.join(" / ")].filter(x=>x&&x.trim()).join("\n");
-  const prompt=`あなたは週報づくりの補助です。次の入力を、週報の「今週の報告」に載せる簡潔な箇条書きにしてください。
-【厳守】
-・各行を「・」で始める短い箇条書きにする（3〜6行程度、1行は短く）。
-・要点だけ。挨拶・前置き・感想・説明文は書かない。
-・情報が少なくても、書かれている事実だけを箇条書きにする。
-・「情報が必要」「教えてください」等の返答や質問は絶対にしない。
-・出力は箇条書きの本文のみ。
-=== 入力 ===
-${src||"（入力なし）"}`;
-  try{
-    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:600,messages:[{role:"user",content:prompt}]})});
-    const data=await res.json();let txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();
-    if(!txt)throw 0;
-    txt=txt.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>/^[・\-*•]/.test(l)?l.replace(/^[\-*•]\s?/,"・"):"・"+l).join("\n");
-    const out=document.getElementById(outId);out.dataset.txt=txt;
-    out.innerHTML=`<div style="white-space:pre-wrap;font-size:14px;line-height:1.7;background:#F1F4F9;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px">${esc(txt)}</div>
-      <button class="btn sub block" onclick="applyAI('${srcId}','${outId}')">この内容を採用</button>`;
-  }catch(e){document.getElementById(outId).innerHTML=`<div class="hint" style="margin-top:10px">うまくいきませんでした。少し待ってもう一度お試しください。（Claude内で開いていると使えます）</div>`;}
-  finally{btn.disabled=false;btn.textContent="AIでまとめる";}
+function aiSummarize(srcId,outId){
+  // ローカル整形（AI不要・オフラインで即動作）：入力を短い箇条書きに整える
+  collect();
+  const raw=(val(srcId)||"").trim();   // 入力欄に書いた文章だけを整える
+  const out=document.getElementById(outId);
+  // 改行・句点・中黒などで分割し、頭の記号を取り除いて整える
+  let items=raw.split(/\r?\n|。|．|・|●|◦|▪|•|;|；/)
+    .map(s=>s.replace(/^[\s　・\-*•▪◦\d.)、]+/,"").replace(/[\s　。．]+$/,"").trim())
+    .filter(s=>s.length>0);
+  const seen=new Set();items=items.filter(s=>{if(seen.has(s))return false;seen.add(s);return true;});
+  if(!items.length){out.innerHTML=`<div class="hint" style="margin-top:10px">整える文章がありません。メモを入力してからお試しください。</div>`;return;}
+  const txt=items.map(s=>"・"+s).join("\n");
+  out.dataset.txt=txt;
+  out.innerHTML=`<div style="white-space:pre-wrap;font-size:14px;line-height:1.7;background:#F1F4F9;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px">${esc(txt)}</div>
+    <button class="btn sub block" onclick="applyAI('${srcId}','${outId}')">この内容を採用</button>`;
 }
 function applyAI(srcId,outId){const o=document.getElementById(outId);const t=o.dataset.txt;if(!t)return;setV(srcId,t);ag(document.getElementById(srcId));o.innerHTML="";}
 function aiHereP(){const f=(lastField&&(lastField.id==="tsThis"||lastField.id==="tsNext"))?lastField.id:"tsThis";aiSummarize(f,"aiOutP");}
