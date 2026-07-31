@@ -212,15 +212,15 @@
   .verstamp{font-size:11px;color:var(--muted);margin-top:8px;opacity:.8}
   #livePreview{display:none}
   @media (min-width:900px){
-    body.wideedit .app{max-width:1180px}
+    body.wideedit .app{max-width:1180px;padding-bottom:0}
     body.wideedit .fab{max-width:1180px}
-    /* 左：入力（1列で見やすく）／右：PDFのライブプレビュー（仕上がりを見ながら入力） */
-    body.wideedit #editor{display:flex;gap:20px;align-items:flex-start}
-    body.wideedit #editor>.pad{flex:0 0 clamp(380px,42%,520px);min-width:0}
-    body.wideedit #livePreview{display:block;flex:1 1 auto;position:sticky;top:74px;align-self:flex-start;
-      max-height:calc(100vh - 96px);overflow:auto;background:#EEF1F6;border:1px solid var(--line);border-radius:10px;padding:14px}
+    /* 左：入力（ここだけスクロール）／右：PDFプレビュー（固定）。ページ自体はスクロールさせず、各ペインが独立してスクロール */
+    body.wideedit #editor{display:flex;gap:20px;align-items:stretch;height:calc(100vh - 52px);overflow:hidden}
+    body.wideedit #editor>.pad{flex:0 0 clamp(380px,42%,520px);min-width:0;height:100%;overflow-y:auto;padding-bottom:96px}
+    body.wideedit #livePreview{display:flex;flex-direction:column;flex:1 1 auto;height:100%;overflow-y:auto;
+      background:#EEF1F6;border:1px solid var(--line);border-radius:10px;padding:14px 14px 96px}
     body.wideedit #livePreview .livebox{margin:0 auto;background:#fff;box-shadow:0 2px 10px rgba(16,35,63,.12)}
-    body.wideedit #livePreview::before{content:"プレビュー（このままPDFになります）";display:block;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:700}
+    body.wideedit #livePreview::before{content:"プレビュー（このままPDFになります）";display:block;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:700;flex:none}
   }
   @media print{
     html,body{background:#fff!important;width:210mm!important;margin:0!important;padding:0!important}
