@@ -747,9 +747,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="grp">
           <div class="gh">今週の報告</div>
           <textarea id="fReport" placeholder="例：塗装工事が遅延気味、応援希望。近隣挨拶を実施。"></textarea>
-          <button class="btn sub block" onclick="aiSummarize('fReport','aiOut')" id="aiBtn">箇条書きに整える</button>
+          <button class="btn sub block" onclick="aiSummarize('fReport','aiOut')" id="aiBtn">AIでまとめる</button>
           <div id="aiOut"></div>
-          <div class="hint">音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。メモ書きを「箇条書きに整える」で整えられます。</div>
+          <div class="hint">音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。メモ書きを「AIでまとめる」で要約できます。</div>
         </div>
       </div>
 
@@ -804,9 +804,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <textarea id="tsNext" placeholder=""></textarea>
         </div>
         <div class="grp">
-          <button class="btn sub block" id="aiBtnP" onclick="aiHereP()">箇条書きに整える</button>
+          <button class="btn sub block" id="aiBtnP" onclick="aiHereP()">AIでまとめる</button>
           <div id="aiOutP"></div>
-          <div class="hint">音声はキーボードの🎤（音声入力）で。書いた欄を選んで「箇条書きに整える」を押すと箇条書きになります。</div>
+          <div class="hint">音声はキーボードの🎤（音声入力）で。書いた欄を選んで「AIでまとめる」を押すと要点を箇条書きにします。</div>
         </div>
       </div>
 
@@ -1248,21 +1248,30 @@ function buildSheetHTML(c){
 }
 function renderSheet(c){document.getElementById("sheet").innerHTML=buildSheetHTML(c);}
 
-function aiSummarize(srcId,outId){
-  // ローカル整形（AI不要・オフラインで即動作）：入力を短い箇条書きに整える
+// AI中継サーバー（Cloudflare Worker等）のURL。?ai=... で開くと保存される。未設定なら空。
+const AI_ENDPOINT_DEFAULT="";
+try{const _p=new URLSearchParams(location.search).get("ai");if(_p!==null){if(_p)localStorage.setItem("aiEndpoint",_p);else localStorage.removeItem("aiEndpoint");}}catch(e){}
+function aiEndpoint(){try{return localStorage.getItem("aiEndpoint")||AI_ENDPOINT_DEFAULT;}catch(e){return AI_ENDPOINT_DEFAULT;}}
+async function aiSummarize(srcId,outId){
   collect();
-  const raw=(val(srcId)||"").trim();   // 入力欄に書いた文章だけを整える
+  const raw=(val(srcId)||"").trim();
   const out=document.getElementById(outId);
-  // 改行・句点・中黒などで分割し、頭の記号を取り除いて整える
-  let items=raw.split(/\r?\n|。|．|・|●|◦|▪|•|;|；/)
-    .map(s=>s.replace(/^[\s　・\-*•▪◦\d.)、]+/,"").replace(/[\s　。．]+$/,"").trim())
-    .filter(s=>s.length>0);
-  const seen=new Set();items=items.filter(s=>{if(seen.has(s))return false;seen.add(s);return true;});
-  if(!items.length){out.innerHTML=`<div class="hint" style="margin-top:10px">整える文章がありません。メモを入力してからお試しください。</div>`;return;}
-  const txt=items.map(s=>"・"+s).join("\n");
-  out.dataset.txt=txt;
-  out.innerHTML=`<div style="white-space:pre-wrap;font-size:14px;line-height:1.7;background:#F1F4F9;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px">${esc(txt)}</div>
-    <button class="btn sub block" onclick="applyAI('${srcId}','${outId}')">この内容を採用</button>`;
+  const btn=document.getElementById(curMode==="plan"?"aiBtnP":"aiBtn");
+  if(!raw){out.innerHTML=`<div class="hint" style="margin-top:10px">まとめる文章を入力してからお試しください。</div>`;return;}
+  const ep=aiEndpoint();
+  if(!ep){out.innerHTML=`<div class="hint" style="margin-top:10px">AIでまとめる機能は未設定です。管理者にご連絡ください。</div>`;return;}
+  const o=btn?btn.textContent:"";if(btn){btn.disabled=true;btn.textContent="AIがまとめ中…";}
+  try{
+    const res=await fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:raw,mode:curMode})});
+    if(!res.ok)throw 0;
+    const data=await res.json();let txt=(data.summary||"").trim();
+    if(!txt)throw 0;
+    txt=txt.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>/^[・\-*•]/.test(l)?l.replace(/^[\-*•]\s?/,"・"):"・"+l).join("\n");
+    out.dataset.txt=txt;
+    out.innerHTML=`<div style="white-space:pre-wrap;font-size:14px;line-height:1.7;background:#F1F4F9;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px">${esc(txt)}</div>
+      <button class="btn sub block" onclick="applyAI('${srcId}','${outId}')">この内容を採用</button>`;
+  }catch(e){out.innerHTML=`<div class="hint" style="margin-top:10px">うまくいきませんでした。通信環境を確認して、もう一度お試しください。</div>`;}
+  finally{if(btn){btn.disabled=false;btn.textContent=o;}}
 }
 function applyAI(srcId,outId){const o=document.getElementById(outId);const t=o.dataset.txt;if(!t)return;setV(srcId,t);ag(document.getElementById(srcId));o.innerHTML="";}
 function aiHereP(){const f=(lastField&&(lastField.id==="tsThis"||lastField.id==="tsNext"))?lastField.id:"tsThis";aiSummarize(f,"aiOutP");}
