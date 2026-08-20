@@ -123,7 +123,7 @@
   .chk .body{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.3}
   .chk .cn{font-weight:700;font-size:14.5px} .chk.on .cn{color:var(--green)}
   .chk .cnote{font-size:11.5px;color:var(--muted);font-weight:400;margin-left:6px}
-  .chk .cdate{flex:0 0 92px;min-width:0;min-height:36px;font-size:12.5px;padding:5px 22px 5px 6px;background-position:right 5px center;background-size:14px 14px}
+  .chk .cdate{flex:0 0 116px;min-width:0;min-height:36px;font-size:12.5px;padding:5px 22px 5px 6px;background-position:right 5px center;background-size:14px 14px}
   .chk .cname{flex:1;min-width:0;min-height:36px}
   .chk .cdel{flex:0 0 38px;min-height:36px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
   .chkadd{width:100%;min-height:44px;margin-top:8px;background:#fff;border:1.5px dashed var(--navy);color:var(--navy);border-radius:8px;font-weight:700;font-size:14.5px}
@@ -220,6 +220,7 @@
     body.wideedit #livePreview{display:block;flex:1 1 auto;height:100%;overflow-y:auto;
       background:#EEF1F6;border:1px solid var(--line);border-radius:10px;padding:14px 14px 96px}
     body.wideedit #livePreview .livebox{margin:0 auto;background:#fff;box-shadow:0 2px 10px rgba(16,35,63,.12);flex:none}
+    body.wideedit .chk .cdate{flex-basis:148px}   /* PCでは日付欄を広げて年月日をフル表示 */
     body.wideedit #livePreview::before{content:"プレビュー（このままPDFになります）";display:block;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:700;flex:none}
   }
   @media print{
@@ -714,7 +715,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="grp" id="typeBox">
           <div class="gh">種別をえらぶ</div>
           <div class="pick"><button id="segGenba" onclick="setMode('genba')">工事部</button>
-            <button id="segPlan" onclick="setMode('plan')">TAIYOSHEET</button></div>
+            <button id="segPlan" onclick="setMode('plan')">TAIYOSHEET部</button></div>
         </div>
         <div class="grp">
           <div class="gh">物件・工期・出来高 <span class="carrytag">自動引き継ぎ</span></div>
@@ -792,7 +793,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="grp" id="typeBoxP">
           <div class="gh">種別をえらぶ</div>
           <div class="pick"><button id="segGenba2" onclick="setMode('genba')">工事部</button>
-            <button id="segPlan2" onclick="setMode('plan')">TAIYOSHEET</button></div>
+            <button id="segPlan2" onclick="setMode('plan')">TAIYOSHEET部</button></div>
         </div>
         <div class="grp">
           <div class="gh">今週の予定（報告・課題・相談）</div>
