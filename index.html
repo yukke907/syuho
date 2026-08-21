@@ -190,6 +190,7 @@
   .pdfmode .sheet-hd{font-size:21px;padding:15px 20px}
   .pdfmode .sheet-meta{font-size:14px;padding:13px 20px;line-height:1.85}
   .pdfmode .sheet-body{padding:16px 22px 22px;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3}
+  .pdfmode .sheet-body.onecol{column-count:1;column-rule:none}
   .pdfmode .sec2{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 14px}
   .pdfmode .sec2.breakok{break-inside:auto;-webkit-column-break-inside:auto}
   .pdfmode .sec2.photosec{column-span:all;-webkit-column-span:all;margin-top:16px}
@@ -235,6 +236,7 @@
     .sheet-hd{font-size:21px;padding:15px 20px}
     .sheet-meta{font-size:14px;padding:13px 20px;line-height:1.85}
     .sheet-body{padding:14px 20px 20px!important;column-count:2;column-width:88mm;column-gap:22px;column-rule:1px solid #C2C9D3}
+    .sheet-body.onecol{column-count:1;column-width:auto;column-rule:none}
     .sheet-body .sec2{break-inside:avoid;page-break-inside:avoid;margin-top:0;margin-bottom:14px}
     .sheet-body .sec2.breakok{break-inside:auto;page-break-inside:auto}
     .sheet-body .sec2.photosec{column-span:all;-webkit-column-span:all;margin-top:16px}
@@ -1243,7 +1245,8 @@ function buildSheetHTML(c){
     head=`TAIYOSHEET 週報`;metaHtml=c.date?`報告日 ${fmtD(c.date)}`:"　";
   }
   const photos=c.photos.length?`<div class="sec2 photosec"><h4>写真</h4><div class="sheet-photos">${c.photos.map(p=>`<figure><img src="${p.data}"><figcaption>${esc(p.cap||"")}</figcaption></figure>`).join("")}</div></div>`:"";
-  return `<div class="sheet"><div class="sheet-hd">${head}</div><div class="sheet-meta">${metaHtml}</div><div class="sheet-body">${body}${photos}</div></div>`;
+  const bodyCls=c.mode==="plan"?"sheet-body onecol":"sheet-body";   // TAIYOSHEET部は1列（縦に詰めてまとまりよく）
+  return `<div class="sheet"><div class="sheet-hd">${head}</div><div class="sheet-meta">${metaHtml}</div><div class="${bodyCls}">${body}${photos}</div></div>`;
 }
 function renderSheet(c){document.getElementById("sheet").innerHTML=buildSheetHTML(c);}
 
@@ -1292,7 +1295,7 @@ async function generatePDF(){
     const trect=target.getBoundingClientRect();
     // 2列の中央区切り線：html2canvasはCSSのcolumn-ruleを描画しないため、キャンバスに直接引いてPC版と見た目を合わせる
     const bodyEl=target.querySelector(".sheet-body");
-    if(bodyEl){
+    if(bodyEl&&!bodyEl.classList.contains("onecol")){   // 1列（TAIYOSHEET部）は中央線を引かない
       const bs=getComputedStyle(bodyEl),bodyRect=bodyEl.getBoundingClientRect();
       const padT=parseFloat(bs.paddingTop)||0,padB=parseFloat(bs.paddingBottom)||0;
       // 写真の手前まで線を引く（本文＝2列＋tailwrapの内部2列はすべて中央線を通す。写真は全幅なので線なし）
