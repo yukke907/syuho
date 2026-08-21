@@ -70,6 +70,7 @@
   .proj .badge{margin-left:auto;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}
   .badge.todo{background:var(--amber-bg);color:var(--orange-d)}
   .badge.done{background:var(--green-bg);color:var(--green)}
+  .badge.draft{background:#EAF0FA;color:var(--navy)}
   .proj .chev{color:#B9C0C6;font-size:24px}
   .kind{font-size:12px;color:var(--muted);background:#EEF1F6;padding:2px 8px;border-radius:5px;margin-left:8px}
   .empty{color:var(--muted);font-size:15px;text-align:center;padding:26px 6px;line-height:1.9}
@@ -825,7 +826,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="grp">
           <div id="aiOutP"></div>
           <button class="savebtn" onclick="doAutoSave()">💾 途中保存する</button>
-          <div class="hint">入力すると自動でも保存されます。あとで続きから入力できます。音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。長い文は自動で折り返します。</div>
+          <div class="hint">入力すると自動でも保存されます。あとで続きから入力できます。音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。</div>
         </div>
       </div>
 
@@ -959,16 +960,19 @@ function renderHome(){
     cnt.textContent="";st.style.display="none";return;
   }
   el.innerHTML=state.projects.map(p=>{
-    const done=state.reports.some(r=>r.projectId===p.id&&r.week===wk);
+    const rep=state.reports.find(r=>r.projectId===p.id&&r.week===wk);
+    const status=rep?(rep.finalized===false?"draft":"done"):"todo";
+    const label=status==="done"?"提出済":status==="draft"?"下書き":"未提出";
     const ico=p.mode==="plan"?ICON_CLIP:ICON_BLDG;
+    const who=(p.mode==="plan"&&rep&&(rep.tsName||"").trim())?"・記入者 "+esc(rep.tsName):"";
     return `<div class="pcard" onclick="openProject('${p.id}')">
       <div class="pico">${ico}</div>
-      <div style="flex:1;min-width:0"><div class="pn">${esc(p.name)}</div><div class="pm">${p.mode==="plan"?"TAIYOSHEET":"工事部"}${p.meta?"・"+esc(p.meta):""}</div></div>
-      <span class="badge ${done?"done":"todo"}">${done?"提出済":"未提出"}</span>
+      <div style="flex:1;min-width:0"><div class="pn">${esc(p.name)}</div><div class="pm">${p.mode==="plan"?"TAIYOSHEET":"工事部"}${p.meta?"・"+esc(p.meta):""}${who}</div></div>
+      <span class="badge ${status}">${label}</span>
       <button class="pdel" onclick="event.stopPropagation();delProject('${p.id}')" aria-label="削除">${ICON_TRASH}</button>
       <span class="chev">›</span></div>`;}).join("");
   cnt.textContent=state.projects.length+"件";
-  const todo=state.projects.filter(p=>!state.reports.some(r=>r.projectId===p.id&&r.week===wk)).length;
+  const todo=state.projects.filter(p=>!state.reports.some(r=>r.projectId===p.id&&r.week===wk&&r.finalized!==false)).length;
   st.style.display="";st.textContent=todo?`今週 未提出 ${todo}件`:"今週はすべて提出済";st.className="hstatus "+(todo?"todo":"done");
 }
 
@@ -976,7 +980,7 @@ function emptyReport(mode){
   return {id:uid(),projectId:null,week:weekKey(),date:todayISO(),mode:mode||"genba",
     name:"",kokiStart:"",kokiEnd:"",deki:"",riritsu:"",tanto:"",contract:"",budget01:"",budget02:"",kotei:"順調",report:"",
     thisDays:blankDays(),nextDays:blankDays(),checks:defChecks(),miles:[],kenan:"",issue:"",
-    pNext:"",tsThis:"",tsNext:"",tsThisList:[],tsNextList:[],tsName:"",todos:[],props:[],photos:[],reflected:false};
+    pNext:"",tsThis:"",tsNext:"",tsThisList:[],tsNextList:[],tsName:"",todos:[],props:[],photos:[],reflected:false,finalized:false};
 }
 function seedFromPrev(p,prev){
   const r=emptyReport(p.mode);r.projectId=p.id;r.name=p.name;r.date=todayISO();
@@ -1158,7 +1162,7 @@ function renderTs(key){
   const arr=cur[key]||(cur[key]=[]);
   el.innerHTML=arr.map((t,i)=>`<div class="tsrow">
     <span class="tsdot">・</span>
-    <textarea class="tstext" rows="1" placeholder="内容を入力（長い文は自動で折り返します）" oninput="cur['${key}'][${i}]=this.value;ag(this);scheduleSave()">${esc(t)}</textarea>
+    <textarea class="tstext" rows="1" placeholder="内容を入力" oninput="cur['${key}'][${i}]=this.value;ag(this);scheduleSave()">${esc(t)}</textarea>
     <button class="cdel" onclick="delTs('${key}',${i})" aria-label="削除">✕</button></div>`).join("")
     ||`<div class="hint">「＋追加」で1行ずつ入力できます。</div>`;
   el.querySelectorAll(".tstext").forEach(ag);
@@ -1425,6 +1429,7 @@ async function generatePDF(){
     const fname=`週報_${(cur.name||"report").replace(/[\\\/:*?"<>|\s]/g,"")}_${todayISO()}.pdf`;
     const file=new File([blob],fname,{type:"application/pdf"});
     window.__lastPDF={blob,file,fname};
+    cur.finalized=true;try{persist();}catch(e){}   // PDFにした＝提出済としてホームに反映
     const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
     const canShareFiles=!!(navigator.canShare&&navigator.canShare({files:[file]}));
     // 共有ボタンを表示（PDF作成後の新しいタップで共有＝iOSのジェスチャー期限切れを回避）
