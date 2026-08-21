@@ -825,8 +825,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         </div>
         <div class="grp">
           <div id="aiOutP"></div>
-          <button class="savebtn" onclick="doAutoSave()">💾 途中保存する</button>
-          <div class="hint">入力すると自動でも保存されます。あとで続きから入力できます。音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。</div>
+          <div class="hint">入力すると自動で保存されます。あとで「ホーム」から続きを入力できます。音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。</div>
         </div>
       </div>
 
@@ -932,7 +931,8 @@ const defChecks=()=>CHECK_DEF.map(p=>({phase:p.phase,hasDate:p.hasDate,addLabel:
 function ag(el){if(!el)return;el.style.height="auto";el.style.height=(el.scrollHeight+2)+"px";}
 let __saveTO=null;
 function scheduleSave(){if(__saveTO)clearTimeout(__saveTO);__saveTO=setTimeout(doAutoSave,700);}
-function doAutoSave(){__saveTO=null;try{if(cur&&persist())saveToast("保存しました");}catch(e){}}
+let __lastToast=0;
+function doAutoSave(){__saveTO=null;try{if(cur&&persist()){const now=Date.now();if(now-__lastToast>4000){__lastToast=now;saveToast("自動保存しました");}}}catch(e){}}
 function saveToast(msg){let t=document.getElementById("saveToast");if(!t){t=document.createElement("div");t.id="saveToast";t.className="savetoast";document.body.appendChild(t);}t.textContent=msg;t.classList.add("show");clearTimeout(t.__to);t.__to=setTimeout(()=>t.classList.remove("show"),1400);}
 function agAll(){document.querySelectorAll("#editor textarea").forEach(ag);}
 
@@ -1433,7 +1433,7 @@ async function generatePDF(){
     const canShareFiles=!!(navigator.canShare&&navigator.canShare({files:[file]}));
     // 「PDFで共有」：作ったPDFをそのまま共有シート（LINE WORKSなど）へ。使えない端末はダウンロードにフォールバック
     let shared=false,cancelled=false;
-    if(canShareFiles){try{await navigator.share({files:[file],title:"週報",text:cur.tsName?`${cur.tsName}の週報`:"週報"});shared=true;}catch(e){if(e&&e.name==="AbortError")cancelled=true;}}
+    if(canShareFiles){try{await navigator.share({files:[file]});shared=true;}catch(e){if(e&&e.name==="AbortError")cancelled=true;}}   // タイトル/本文を付けるとiOSでファイル対応アプリ（LINE WORKS等）が共有先に出ないことがあるため、ファイルのみ共有
     if(!shared&&!cancelled){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);alert("PDFを保存しました。LINE WORKSのトークに、このPDFを添付して送ってください。");}
   }catch(e){alert("PDF作成に失敗しました。もう一度お試しください。");}
   finally{if(btn){btn.disabled=false;btn.textContent=o;}stage.innerHTML="";stage.className="";}
