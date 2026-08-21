@@ -1014,7 +1014,13 @@ function setMode(m){
   curMode=m;
   ["segGenba","segGenba2"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle("on",m==="genba");});
   ["segPlan","segPlan2"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle("on",m==="plan");});
-  if(cur)cur.mode=m;
+  if(cur){cur.mode=m;
+    if(m==="plan"){   // TAIYOSHEET部：最初から1行分の入力欄を表示
+      if(!Array.isArray(cur.tsThisList)||!cur.tsThisList.length)cur.tsThisList=[""];
+      if(!Array.isArray(cur.tsNextList)||!cur.tsNextList.length)cur.tsNextList=[""];
+      renderTs("tsThisList");renderTs("tsNextList");
+    }
+  }
   if(document.getElementById("editor").style.display!=="none"){step=0;showStep();}
 }
 
@@ -1070,6 +1076,7 @@ function loadEditor(){
   if(!Array.isArray(c.tsNextList))c.tsNextList=(c.tsNext||"").trim()?c.tsNext.split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean):[];
   if(!c.tsName)c.tsName=localStorage.getItem("reporterName")||"";
   setV("tsName",c.tsName);
+  if((c.mode||curMode)==="plan"){if(!c.tsThisList.length)c.tsThisList=[""];if(!c.tsNextList.length)c.tsNextList=[""];}   // 最初から1行分の入力欄を表示
   if(!c.thisDays||!c.thisDays.length)c.thisDays=blankDays();
   if(!c.nextDays||!c.nextDays.length)c.nextDays=blankDays();
   if(!c.checks||!c.checks.length)c.checks=defChecks();if(!c.miles)c.miles=[];
@@ -1333,6 +1340,24 @@ async function generatePDF(){
     if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(e){}}
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     const target=stage.querySelector(".sheet");
+    // 内容が少なくA4がスカスカな時（TAIYOSHEET部）：カード枠で囲み、セクション間隔を広げて中身を育て、最後は縦中央に配置して余白を上下に振り分ける
+    let planCentered=false;
+    if(cur.mode==="plan"){
+      const pagePx=794*297/210;                       // A4縦1ページ分の高さ(px, 幅794基準)
+      const bodyEl=target.querySelector(".sheet-body");
+      const secs=bodyEl?[...bodyEl.children].filter(el=>el.classList.contains("sec2")):[];
+      const h0=target.getBoundingClientRect().height;
+      if(h0<pagePx*0.96){
+        target.style.border="1.5px solid #E1E5EA";target.style.borderRadius="14px";target.style.overflow="hidden";   // カード枠で「余白」を意図的に見せる
+        if(secs.length){
+          const grown=Math.min(pagePx*0.82, h0+secs.length*150);   // 0.82ページ程度まで、1セクション最大150px広げる
+          const per=Math.max(0,(grown-h0)/secs.length);
+          if(bodyEl){bodyEl.style.paddingTop=Math.min(per,44)+"px";bodyEl.style.paddingBottom=Math.min(per,44)+"px";}
+          secs.forEach((s,i)=>{if(i<secs.length-1){const m=parseFloat(getComputedStyle(s).marginBottom)||0;s.style.marginBottom=(m+per)+"px";}});
+        }
+        planCentered=true;   // addImage時に縦中央寄せする
+      }
+    }
     // iPhone/AndroidはCanvasの最大面積・最大辺に制限があるため、内容の高さに応じて倍率を自動調整（超えると真っ白・崩れの原因になる）
     const cssW=794,cssH=Math.max(1,Math.ceil(target.getBoundingClientRect().height));
     const MAX_AREA=16*1000*1000,MAX_DIM=8192;
@@ -1391,7 +1416,9 @@ async function generatePDF(){
       ctx.drawImage(canvas,0,Math.round(y),canvas.width,sliceH,0,0,canvas.width,sliceH);
       const img=c2.toDataURL("image/jpeg",0.9);
       if(page>0)pdf.addPage();
-      pdf.addImage(img,"JPEG",imgXmm,0,imgWmm,sliceH*imgWmm/canvas.width);
+      const imgHmm=sliceH*imgWmm/canvas.width;
+      const yTop=(planCentered&&naturalPages===1&&imgHmm<ph-4)?(ph-imgHmm)/2:0;   // 1ページで収まる短い週報は縦中央に配置して余白を上下均等に
+      pdf.addImage(img,"JPEG",imgXmm,yTop,imgWmm,imgHmm);
       y=cut;page++;
     }
     const blob=pdf.output("blob");
@@ -1402,7 +1429,7 @@ async function generatePDF(){
     const canShareFiles=!!(navigator.canShare&&navigator.canShare({files:[file]}));
     // 共有ボタンを表示（PDF作成後の新しいタップで共有＝iOSのジェスチャー期限切れを回避）
     const shBtn=document.getElementById("shareLine"),shHint=document.getElementById("shareHint");
-    if(shBtn&&canShareFiles){shBtn.style.display="";if(shHint)shHint.style.display="";}
+    if(shBtn&&canShareFiles){shBtn.style.display="";if(shHint)shHint.style.display="";try{shBtn.scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}saveToast("PDFができました。共有ボタンから送れます");}
     let shared=false;
     if(isMobile&&canShareFiles){try{await navigator.share({files:[file],title:"週報",text:cur.tsName?`${cur.tsName}の週報`:"週報"});shared=true;}catch(e){shared=false;}}
     if(!shared){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);if(!isMobile)alert("PDFをダウンロードしました。ブラウザ右上のダウンロード（↓）か「ダウンロード」フォルダから開けます。LINE WORKSのトークに、このPDFを添付して送ってください。");}
