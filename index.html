@@ -70,6 +70,7 @@
   .proj .badge{margin-left:auto;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}
   .badge.todo{background:var(--amber-bg);color:var(--orange-d)}
   .badge.done{background:var(--green-bg);color:var(--green)}
+  .badge.draft{background:#EAF0FA;color:var(--navy)}
   .proj .chev{color:#B9C0C6;font-size:24px}
   .kind{font-size:12px;color:var(--muted);background:#EEF1F6;padding:2px 8px;border-radius:5px;margin-left:8px}
   .empty{color:var(--muted);font-size:15px;text-align:center;padding:26px 6px;line-height:1.9}
@@ -127,6 +128,14 @@
   .chk .cname{flex:1;min-width:0;min-height:36px}
   .chk .cdel{flex:0 0 38px;min-height:36px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
   .chkadd{width:100%;min-height:44px;margin-top:8px;background:#fff;border:1.5px dashed var(--navy);color:var(--navy);border-radius:8px;font-weight:700;font-size:14.5px}
+  .tsrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px}
+  .tsrow .tsdot{flex:0 0 auto;font-weight:800;color:var(--navy);line-height:38px;font-size:16px}
+  .tsrow .tstext{flex:1;min-width:0;min-height:38px;resize:none;overflow:hidden;line-height:1.5}
+  .tsrow .cdel{flex:0 0 38px;min-height:38px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
+  .savetoast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(10px);background:var(--navy);color:#fff;padding:9px 18px;border-radius:22px;font-size:13.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:9999}
+  .savetoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .savebtn{width:100%;min-height:46px;margin-top:8px;background:var(--navy);border:none;color:#fff;border-radius:10px;font-weight:800;font-size:15px}
+  .sharebtn{width:100%;min-height:52px;margin-top:10px;background:#06C755;border:none;color:#fff;border-radius:12px;font-weight:800;font-size:16px}
   .prow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
   .prow .pcol{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
   .prow .cdel{flex:0 0 40px;min-height:40px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
@@ -171,6 +180,7 @@
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
   .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
   .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
+  .bl2{font-size:14px;padding:3px 0;line-height:1.6;padding-left:1.1em;text-indent:-1.1em}
   .sheet-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px;align-items:start}
   .sheet-photos figure{margin:0}
   .sheet-photos img{width:100%;aspect-ratio:4/3;height:auto;object-fit:cover;border-radius:6px;display:block;border:1px solid var(--line)}
@@ -202,7 +212,8 @@
   .pdfmode .sec2 p{font-size:15px;line-height:1.8}
   .pdfmode .dl2{font-size:15px;padding:2px 0}.pdfmode .dl2 b{min-width:3.4em}
   .pdfmode .cl2{font-size:15px;padding:2px 0}
-  .pdfmode .cl2,.pdfmode .dl2{break-inside:avoid;-webkit-column-break-inside:avoid}
+  .pdfmode .bl2{font-size:15px;padding:4px 0;line-height:1.7}
+  .pdfmode .cl2,.pdfmode .dl2,.pdfmode .bl2{break-inside:avoid;-webkit-column-break-inside:avoid}
   .pdfmode .sheet-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-items:start}
   .pdfmode .sheet-photos img{width:100%;aspect-ratio:4/3;height:auto;object-fit:cover;border:1px solid var(--line);border-radius:4px;display:block}
   .pdfmode .sheet-photos figcaption{font-size:13px;margin-top:5px;color:var(--muted)}
@@ -247,7 +258,8 @@
     .sec2 p{font-size:15px;line-height:1.8}
     .dl2{font-size:15px;padding:2px 0} .dl2 b{min-width:3.4em}
     .cl2{font-size:15px;padding:2px 0}
-    .cl2,.dl2{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid}
+    .bl2{font-size:15px;padding:4px 0;line-height:1.7}
+    .cl2,.dl2,.bl2{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid}
     .grp-blk{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px}
     .sec2 h4{break-after:avoid;page-break-after:avoid}
     .cl2.phh{break-after:avoid;page-break-after:avoid}
@@ -798,16 +810,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
             <button id="segPlan2" onclick="setMode('plan')">TAIYOSHEET部</button></div>
         </div>
         <div class="grp">
+          <div class="gh">記入者</div>
+          <input id="tsName" placeholder="お名前（次回も自動で入ります）" oninput="cur.tsName=this.value;scheduleSave()">
+        </div>
+        <div class="grp">
           <div class="gh">今週の予定（報告・課題・相談）</div>
-          <textarea id="tsThis" placeholder=""></textarea>
+          <div id="tsThisList"></div>
+          <button class="chkadd" onclick="addTs('tsThisList')">＋追加</button>
         </div>
         <div class="grp">
           <div class="gh">来週の予定（報告・課題・相談）</div>
-          <textarea id="tsNext" placeholder=""></textarea>
+          <div id="tsNextList"></div>
+          <button class="chkadd" onclick="addTs('tsNextList')">＋追加</button>
         </div>
         <div class="grp">
           <div id="aiOutP"></div>
-          <div class="hint">音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。</div>
+          <button class="savebtn" onclick="doAutoSave()">💾 途中保存する</button>
+          <div class="hint">入力すると自動でも保存されます。あとで続きから入力できます。音声で入れたい時は、キーボードの🎤（音声入力）で話すと入ります。</div>
         </div>
       </div>
 
@@ -846,6 +865,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <div id="preview" style="display:none">
     <div class="pad"><div id="sheet"></div></div>
     <div class="pad pv-actions">
+      <div class="hint">下の「PDFで共有」を押すと、PDFを作ってそのままLINE WORKSなどに送れます。（共有が使えない端末では自動でダウンロードされます）</div>
     </div>
   </div>
 </div>
@@ -860,7 +880,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 </div></div>
 <div class="fab" id="fabPreview" style="display:none"><div class="rowbtn three">
   <button class="btn nav" onclick="editAgain()">もどる</button>
-  <button class="btn go" onclick="generatePDF()">PDFにする</button>
+  <button class="btn go" onclick="generatePDF()">PDFで共有</button>
   <button class="btn nav" onclick="go('home')">ホーム</button>
 </div></div>
 
@@ -910,6 +930,10 @@ const setV=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||"";};
 const blankDays=()=>DAYS.map((d,i)=>({d,text:"",off:i===0}));
 const defChecks=()=>CHECK_DEF.map(p=>({phase:p.phase,hasDate:p.hasDate,addLabel:p.addLabel||"",items:p.items.map(a=>({name:a[0],note:a[1],date:"",done:false,custom:false}))}));
 function ag(el){if(!el)return;el.style.height="auto";el.style.height=(el.scrollHeight+2)+"px";}
+let __saveTO=null;
+function scheduleSave(){if(__saveTO)clearTimeout(__saveTO);__saveTO=setTimeout(doAutoSave,700);}
+function doAutoSave(){__saveTO=null;try{if(cur&&persist())saveToast("保存しました");}catch(e){}}
+function saveToast(msg){let t=document.getElementById("saveToast");if(!t){t=document.createElement("div");t.id="saveToast";t.className="savetoast";document.body.appendChild(t);}t.textContent=msg;t.classList.add("show");clearTimeout(t.__to);t.__to=setTimeout(()=>t.classList.remove("show"),1400);}
 function agAll(){document.querySelectorAll("#editor textarea").forEach(ag);}
 
 function go(s){
@@ -935,16 +959,19 @@ function renderHome(){
     cnt.textContent="";st.style.display="none";return;
   }
   el.innerHTML=state.projects.map(p=>{
-    const done=state.reports.some(r=>r.projectId===p.id&&r.week===wk);
+    const rep=state.reports.find(r=>r.projectId===p.id&&r.week===wk);
+    const status=rep?(rep.finalized===false?"draft":"done"):"todo";
+    const label=status==="done"?"提出済":status==="draft"?"下書き":"未提出";
     const ico=p.mode==="plan"?ICON_CLIP:ICON_BLDG;
+    const who=(p.mode==="plan"&&rep&&(rep.tsName||"").trim())?"・記入者 "+esc(rep.tsName):"";
     return `<div class="pcard" onclick="openProject('${p.id}')">
       <div class="pico">${ico}</div>
-      <div style="flex:1;min-width:0"><div class="pn">${esc(p.name)}</div><div class="pm">${p.mode==="plan"?"TAIYOSHEET":"工事部"}${p.meta?"・"+esc(p.meta):""}</div></div>
-      <span class="badge ${done?"done":"todo"}">${done?"提出済":"未提出"}</span>
+      <div style="flex:1;min-width:0"><div class="pn">${esc(p.name)}</div><div class="pm">${p.mode==="plan"?"TAIYOSHEET":"工事部"}${p.meta?"・"+esc(p.meta):""}${who}</div></div>
+      <span class="badge ${status}">${label}</span>
       <button class="pdel" onclick="event.stopPropagation();delProject('${p.id}')" aria-label="削除">${ICON_TRASH}</button>
       <span class="chev">›</span></div>`;}).join("");
   cnt.textContent=state.projects.length+"件";
-  const todo=state.projects.filter(p=>!state.reports.some(r=>r.projectId===p.id&&r.week===wk)).length;
+  const todo=state.projects.filter(p=>!state.reports.some(r=>r.projectId===p.id&&r.week===wk&&r.finalized!==false)).length;
   st.style.display="";st.textContent=todo?`今週 未提出 ${todo}件`:"今週はすべて提出済";st.className="hstatus "+(todo?"todo":"done");
 }
 
@@ -952,7 +979,7 @@ function emptyReport(mode){
   return {id:uid(),projectId:null,week:weekKey(),date:todayISO(),mode:mode||"genba",
     name:"",kokiStart:"",kokiEnd:"",deki:"",riritsu:"",tanto:"",contract:"",budget01:"",budget02:"",kotei:"順調",report:"",
     thisDays:blankDays(),nextDays:blankDays(),checks:defChecks(),miles:[],kenan:"",issue:"",
-    pNext:"",tsThis:"",tsNext:"",todos:[],props:[],photos:[],reflected:false};
+    pNext:"",tsThis:"",tsNext:"",tsThisList:[],tsNextList:[],tsName:"",todos:[],props:[],photos:[],reflected:false,finalized:false};
 }
 function seedFromPrev(p,prev){
   const r=emptyReport(p.mode);r.projectId=p.id;r.name=p.name;r.date=todayISO();
@@ -990,7 +1017,13 @@ function setMode(m){
   curMode=m;
   ["segGenba","segGenba2"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle("on",m==="genba");});
   ["segPlan","segPlan2"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle("on",m==="plan");});
-  if(cur)cur.mode=m;
+  if(cur){cur.mode=m;
+    if(m==="plan"){   // TAIYOSHEET部：最初から1行分の入力欄を表示
+      if(!Array.isArray(cur.tsThisList)||!cur.tsThisList.length)cur.tsThisList=[""];
+      if(!Array.isArray(cur.tsNextList)||!cur.tsNextList.length)cur.tsNextList=[""];
+      renderTs("tsThisList");renderTs("tsNextList");
+    }
+  }
   if(document.getElementById("editor").style.display!=="none"){step=0;showStep();}
 }
 
@@ -1042,7 +1075,11 @@ function loadEditor(){
   setV("fName",c.name);setV("fKokiStart",c.kokiStart);setV("fKokiEnd",c.kokiEnd);setV("fDeki",c.deki);setV("fRiritsu",c.riritsu);setV("fTanto",c.tanto);
   setV("fContract",fmtMoney(c.contract));setV("fBudget01",fmtMoney(c.budget01));setV("fBudget02",fmtMoney(c.budget02));
   setV("fReport",c.report);setV("fKenan",c.kenan);setV("fIssue",c.issue);
-  setV("tsThis",c.tsThis);setV("tsNext",c.tsNext);
+  if(!Array.isArray(c.tsThisList))c.tsThisList=(c.tsThis||"").trim()?c.tsThis.split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean):[];
+  if(!Array.isArray(c.tsNextList))c.tsNextList=(c.tsNext||"").trim()?c.tsNext.split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean):[];
+  if(!c.tsName)c.tsName=localStorage.getItem("reporterName")||"";
+  setV("tsName",c.tsName);
+  if((c.mode||curMode)==="plan"){if(!c.tsThisList.length)c.tsThisList=[""];if(!c.tsNextList.length)c.tsNextList=[""];}   // 最初から1行分の入力欄を表示
   if(!c.thisDays||!c.thisDays.length)c.thisDays=blankDays();
   if(!c.nextDays||!c.nextDays.length)c.nextDays=blankDays();
   if(!c.checks||!c.checks.length)c.checks=defChecks();if(!c.miles)c.miles=[];
@@ -1051,6 +1088,7 @@ function loadEditor(){
   document.getElementById("reflectTag").style.display=c.reflected?"":"none";
   renderKotei();renderDayGrid("thisDays","thisDayList");renderDayGrid("nextDays","nextDayList");
   renderChecks();renderMiles();renderTodos();renderProps();renderPhotos();
+  renderTs("tsThisList");renderTs("tsNextList");
   document.getElementById("aiOut").innerHTML="";document.getElementById("aiOutP").innerHTML="";
 }
 function renderKotei(){
@@ -1117,6 +1155,21 @@ function renderTodos(){
 function addTodo(){cur.todos.push({text:"",done:false});renderTodos();}
 function delTodo(i){cur.todos.splice(i,1);renderTodos();}
 
+/* TAIYOSHEET部 今週/来週の予定リスト */
+function renderTs(key){
+  const el=document.getElementById(key);if(!el)return;
+  const arr=cur[key]||(cur[key]=[]);
+  el.innerHTML=arr.map((t,i)=>`<div class="tsrow">
+    <span class="tsdot">・</span>
+    <textarea class="tstext" rows="1" placeholder="内容を入力" oninput="cur['${key}'][${i}]=this.value;ag(this);scheduleSave()">${esc(t)}</textarea>
+    <button class="cdel" onclick="delTs('${key}',${i})" aria-label="削除">✕</button></div>`).join("")
+    ||`<div class="hint">「＋追加」で1行ずつ入力できます。</div>`;
+  el.querySelectorAll(".tstext").forEach(ag);
+}
+function addTs(key){(cur[key]||(cur[key]=[])).push("");renderTs(key);scheduleSave();
+  const el=document.getElementById(key);const tas=el&&el.querySelectorAll(".tstext");if(tas&&tas.length)tas[tas.length-1].focus();}
+function delTs(key,i){cur[key].splice(i,1);renderTs(key);scheduleSave();}
+
 /* 物件・案件リスト */
 function renderProps(){
   const el=document.getElementById("propList");if(!el)return;
@@ -1182,7 +1235,10 @@ function collect(){
     c.name=val("fName").trim();c.kokiStart=val("fKokiStart");c.kokiEnd=val("fKokiEnd");c.deki=val("fDeki");c.riritsu=val("fRiritsu");
     c.contract=moneyDigits(val("fContract"));c.budget01=moneyDigits(val("fBudget01"));c.budget02=moneyDigits(val("fBudget02"));
     c.date=todayISO();c.tanto=val("fTanto");c.report=val("fReport");c.kenan=val("fKenan");c.issue=val("fIssue");
-  }else{c.name="TAIYOSHEET 週報";c.date=todayISO();c.tanto="";c.tsThis=val("tsThis");c.tsNext=val("tsNext");}
+  }else{c.name="TAIYOSHEET 週報";c.date=todayISO();c.tanto="";
+    c.tsName=val("tsName").trim();if(c.tsName)localStorage.setItem("reporterName",c.tsName);
+    c.tsThisList=(c.tsThisList||[]).map(s=>(s||"").trim());c.tsNextList=(c.tsNextList||[]).map(s=>(s||"").trim());
+    c.tsThis=c.tsThisList.filter(Boolean).join("\n");c.tsNext=c.tsNextList.filter(Boolean).join("\n");}
 }
 
 function buildText(c){
@@ -1236,13 +1292,16 @@ function buildSheetHTML(c){
     if(tail)body+=`<div class="tailwrap">${tail}</div>`;   // 全幅の中で内部2列（中央線を通しつつ、まとまりごと動いて取り残しを防ぐ）
     head=`週間報告　${esc(c.name)||"（物件名未記入）"}`;
   }else{
-    if((c.tsThis||"").trim())body+=sec("今週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsThis)}</p>`,"breakok");
-    if((c.tsNext||"").trim())body+=sec("来週の予定（報告・課題・相談）",`<p style="white-space:pre-wrap">${esc(c.tsNext)}</p>`,"breakok");
+    const tsArr=k=>{const a=c[k];if(Array.isArray(a))return a.map(s=>(s||"").trim()).filter(Boolean);return (c[k==="tsThisList"?"tsThis":"tsNext"]||"").split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean);};
+    const bl=arr=>arr.map(t=>`<div class="bl2">・${esc(t)}</div>`).join("");
+    const tThis=tsArr("tsThisList"),tNext=tsArr("tsNextList");
+    if(tThis.length)body+=sec("今週の予定（報告・課題・相談）",bl(tThis),"breakok");
+    if(tNext.length)body+=sec("来週の予定（報告・課題・相談）",bl(tNext),"breakok");
     const td=(c.todos||[]).filter(t=>t.text.trim());
     if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
     const pr=(c.props||[]).filter(x=>x.name.trim());
     if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="cl2">・${esc(x.name)}${x.status?`　<span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
-    head=`TAIYOSHEET 週報`;metaHtml=c.date?`報告日 ${fmtD(c.date)}`:"　";
+    head=`TAIYOSHEET 週報`;const pm=[];if(c.date)pm.push(`報告日 ${fmtD(c.date)}`);if((c.tsName||"").trim())pm.push(`記入者 ${esc(c.tsName)}`);metaHtml=pm.join("　")||"　";
   }
   const photos=c.photos.length?`<div class="sec2 photosec"><h4>写真</h4><div class="sheet-photos">${c.photos.map(p=>`<figure><img src="${p.data}"><figcaption>${esc(p.cap||"")}</figcaption></figure>`).join("")}</div></div>`:"";
   const bodyCls=c.mode==="plan"?"sheet-body onecol":"sheet-body";   // TAIYOSHEET部は1列（縦に詰めてまとまりよく）
@@ -1260,11 +1319,12 @@ function persist(){
   state.reports.unshift(JSON.parse(JSON.stringify(cur)));
   save();return true;
 }
+function hideShareBtn(){const b=document.getElementById("shareLine"),h=document.getElementById("shareHint");if(b)b.style.display="none";if(h)h.style.display="none";window.__lastPDF=null;}
 function finish(){
   if(!persist()){alert(curMode==="genba"?"物件名を入れてください。":"内容を入れてください。");return;}
-  renderSheet(cur);go("preview");
+  hideShareBtn();renderSheet(cur);go("preview");
 }
-function editAgain(){go("editor");showStep();}
+function editAgain(){hideShareBtn();go("editor");showStep();}
 function printPDF(){window.print();}
 async function ensureLibs(){
   // html2canvas / jsPDF はファイル内に同梱済みのため、ネット接続なしでも利用できる（読み込み確認のみ）
@@ -1283,6 +1343,24 @@ async function generatePDF(){
     if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(e){}}
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     const target=stage.querySelector(".sheet");
+    // 内容が少なくA4がスカスカな時（TAIYOSHEET部）：カード枠で囲み、セクション間隔を広げて中身を育て、最後は縦中央に配置して余白を上下に振り分ける
+    let planCentered=false;
+    if(cur.mode==="plan"){
+      const pagePx=794*297/210;                       // A4縦1ページ分の高さ(px, 幅794基準)
+      const bodyEl=target.querySelector(".sheet-body");
+      const secs=bodyEl?[...bodyEl.children].filter(el=>el.classList.contains("sec2")):[];
+      const h0=target.getBoundingClientRect().height;
+      if(h0<pagePx*0.96){
+        target.style.border="1.5px solid #E1E5EA";target.style.borderRadius="14px";target.style.overflow="hidden";   // カード枠で「余白」を意図的に見せる
+        if(secs.length){
+          const grown=Math.min(pagePx*0.82, h0+secs.length*150);   // 0.82ページ程度まで、1セクション最大150px広げる
+          const per=Math.max(0,(grown-h0)/secs.length);
+          if(bodyEl){bodyEl.style.paddingTop=Math.min(per,44)+"px";bodyEl.style.paddingBottom=Math.min(per,44)+"px";}
+          secs.forEach((s,i)=>{if(i<secs.length-1){const m=parseFloat(getComputedStyle(s).marginBottom)||0;s.style.marginBottom=(m+per)+"px";}});
+        }
+        planCentered=true;   // addImage時に縦中央寄せする
+      }
+    }
     // iPhone/AndroidはCanvasの最大面積・最大辺に制限があるため、内容の高さに応じて倍率を自動調整（超えると真っ白・崩れの原因になる）
     const cssW=794,cssH=Math.max(1,Math.ceil(target.getBoundingClientRect().height));
     const MAX_AREA=16*1000*1000,MAX_DIM=8192;
@@ -1341,16 +1419,22 @@ async function generatePDF(){
       ctx.drawImage(canvas,0,Math.round(y),canvas.width,sliceH,0,0,canvas.width,sliceH);
       const img=c2.toDataURL("image/jpeg",0.9);
       if(page>0)pdf.addPage();
-      pdf.addImage(img,"JPEG",imgXmm,0,imgWmm,sliceH*imgWmm/canvas.width);
+      const imgHmm=sliceH*imgWmm/canvas.width;
+      const yTop=(planCentered&&naturalPages===1&&imgHmm<ph-4)?(ph-imgHmm)/2:0;   // 1ページで収まる短い週報は縦中央に配置して余白を上下均等に
+      pdf.addImage(img,"JPEG",imgXmm,yTop,imgWmm,imgHmm);
       y=cut;page++;
     }
     const blob=pdf.output("blob");
     const fname=`週報_${(cur.name||"report").replace(/[\\\/:*?"<>|\s]/g,"")}_${todayISO()}.pdf`;
     const file=new File([blob],fname,{type:"application/pdf"});
+    window.__lastPDF={blob,file,fname};
+    cur.finalized=true;try{persist();}catch(e){}   // PDFにした＝提出済としてホームに反映
     const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-    let shared=false;
-    if(isMobile&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:"週報"});shared=true;}catch(e){shared=false;}}
-    if(!shared){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);if(!isMobile)alert("PDFをダウンロードしました。ブラウザ右上のダウンロード（↓）か「ダウンロード」フォルダから開けます。LINE WORKSのトークに、このPDFを添付して送ってください。");}
+    const canShareFiles=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+    // 「PDFで共有」：作ったPDFをそのまま共有シート（LINE WORKSなど）へ。使えない端末はダウンロードにフォールバック
+    let shared=false,cancelled=false;
+    if(canShareFiles){try{await navigator.share({files:[file],title:"週報",text:cur.tsName?`${cur.tsName}の週報`:"週報"});shared=true;}catch(e){if(e&&e.name==="AbortError")cancelled=true;}}
+    if(!shared&&!cancelled){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);alert("PDFを保存しました。LINE WORKSのトークに、このPDFを添付して送ってください。");}
   }catch(e){alert("PDF作成に失敗しました。もう一度お試しください。");}
   finally{if(btn){btn.disabled=false;btn.textContent=o;}stage.innerHTML="";stage.className="";}
 }
