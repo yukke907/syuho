@@ -915,6 +915,8 @@ function toLocalISO(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart
 function weekKey(d){const t=d?new Date(d):new Date();t.setHours(0,0,0,0);const day=(t.getDay()+6)%7;const mon=new Date(t);mon.setDate(t.getDate()-day);return toLocalISO(mon);}
 function weekLabel(){const t=new Date();const day=(t.getDay()+6)%7;const mon=new Date(t);mon.setDate(t.getDate()-day);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const f=d=>`${d.getMonth()+1}/${d.getDate()}`;return `${f(mon)}–${f(sun)}`;}
 const todayISO=()=>toLocalISO(new Date());
+function weekSpan(weekISO){if(!weekISO)return"";const mon=parseISO(weekISO);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const f=d=>`${d.getMonth()+1}/${d.getDate()}`;return `${f(mon)}〜${f(sun)}`;}
+function pdfBaseName(c){const who=((c.mode==="plan"?(c.tsName||""):(c.name||"")).trim())||"名前なし";const d=c.date||todayISO();return `週報_${d}_${who}`.replace(/[\\\/:*?"<>|\s]/g,"");}
 const fmtD=iso=>{if(!iso)return"";const p=iso.split("-");return p.length===3?`${+p[1]}/${+p[2]}`:iso;};
 function parseISO(s){if(!s)return new Date();const p=s.split("-");return new Date(+p[0],(+p[1]||1)-1,(+p[2]||1));}
 function dayMD(weekISO,offset,i){const mon=parseISO(weekISO);const d=new Date(mon);d.setDate(mon.getDate()-1+offset+i);return `${d.getMonth()+1}/${d.getDate()}`;}
@@ -1301,7 +1303,7 @@ function buildSheetHTML(c){
     if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
     const pr=(c.props||[]).filter(x=>x.name.trim());
     if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="bl2">・${esc(x.name)}${x.status?`<br><span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
-    head=`TAIYOSHEET 週報`;const pm=[];if(c.date)pm.push(`報告日 ${fmtD(c.date)}`);if((c.tsName||"").trim())pm.push(`記入者 ${esc(c.tsName)}`);metaHtml=pm.join("　")||"　";
+    head=`TAIYOSHEET 計画推進部 週報`;const pm=[];if(c.date)pm.push(`報告日 ${fmtD(c.date)}`);const sp=weekSpan(c.week);if(sp)pm.push(`対象週 ${sp}`);if((c.tsName||"").trim())pm.push(`記入者 ${esc(c.tsName)}`);metaHtml=pm.join("　")||"　";
   }
   const photos=c.photos.length?`<div class="sec2 photosec"><h4>写真</h4><div class="sheet-photos">${c.photos.map(p=>`<figure><img src="${p.data}"><figcaption>${esc(p.cap||"")}</figcaption></figure>`).join("")}</div></div>`:"";
   const bodyCls=c.mode==="plan"?"sheet-body onecol":"sheet-body";   // TAIYOSHEET部は1列（縦に詰めてまとまりよく）
@@ -1329,8 +1331,14 @@ function printPDF(){window.print();}
 function sharePDF(){
   if(cur){cur.finalized=true;try{persist();}catch(e){}}
   const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-  if(isMobile){window.print();}   // スマホ：印刷画面→共有からLINE WORKSへ
-  else{generatePDF();}            // パソコン：ヘッダー/フッターの付かないきれいなPDFを保存（ダウンロード）
+  if(isMobile){
+    // スマホ：印刷画面→共有からLINE WORKSへ。保存名は<title>が使われるため一時的に差し替える
+    const prev=document.title;
+    document.title=cur?pdfBaseName(cur):prev;
+    const restore=()=>{document.title=prev;window.removeEventListener("afterprint",restore);};
+    window.addEventListener("afterprint",restore);setTimeout(restore,60000);
+    window.print();
+  }else{generatePDF();}           // パソコン：ヘッダー/フッターの付かないきれいなPDFを保存（ダウンロード）
 }
 async function ensureLibs(){
   // html2canvas / jsPDF はファイル内に同梱済みのため、ネット接続なしでも利用できる（読み込み確認のみ）
@@ -1414,7 +1422,7 @@ async function generatePDF(){
       y=cut;page++;
     }
     const blob=pdf.output("blob");
-    const fname=`週報_${(cur.name||"report").replace(/[\\\/:*?"<>|\s]/g,"")}_${todayISO()}.pdf`;
+    const fname=`${pdfBaseName(cur)}.pdf`;
     const file=new File([blob],fname,{type:"application/pdf"});
     window.__lastPDF={blob,file,fname};
     cur.finalized=true;try{persist();}catch(e){}   // PDFにした＝提出済としてホームに反映
