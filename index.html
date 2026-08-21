@@ -865,8 +865,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <div id="preview" style="display:none">
     <div class="pad"><div id="sheet"></div></div>
     <div class="pad pv-actions">
-      <button id="shareLine" class="sharebtn" style="display:none" onclick="shareLastPDF()">📤 LINE WORKSなどで共有する</button>
-      <div id="shareHint" class="hint" style="display:none">上のボタンから「LINE WORKS」を選ぶと、そのままトークに送れます。表示されない時は、下記からPDFを保存して添付してください。</div>
+      <div class="hint">下の「PDFで共有」を押すと、PDFを作ってそのままLINE WORKSなどに送れます。（共有が使えない端末では自動でダウンロードされます）</div>
     </div>
   </div>
 </div>
@@ -881,7 +880,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 </div></div>
 <div class="fab" id="fabPreview" style="display:none"><div class="rowbtn three">
   <button class="btn nav" onclick="editAgain()">もどる</button>
-  <button class="btn go" onclick="generatePDF()">PDFにする</button>
+  <button class="btn go" onclick="generatePDF()">PDFで共有</button>
   <button class="btn nav" onclick="go('home')">ホーム</button>
 </div></div>
 
@@ -1432,25 +1431,14 @@ async function generatePDF(){
     cur.finalized=true;try{persist();}catch(e){}   // PDFにした＝提出済としてホームに反映
     const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
     const canShareFiles=!!(navigator.canShare&&navigator.canShare({files:[file]}));
-    // 共有ボタンを表示（PDF作成後の新しいタップで共有＝iOSのジェスチャー期限切れを回避）
-    const shBtn=document.getElementById("shareLine"),shHint=document.getElementById("shareHint");
-    if(shBtn&&canShareFiles){shBtn.style.display="";if(shHint)shHint.style.display="";try{shBtn.scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}saveToast("PDFができました。共有ボタンから送れます");}
-    let shared=false;
-    if(isMobile&&canShareFiles){try{await navigator.share({files:[file],title:"週報",text:cur.tsName?`${cur.tsName}の週報`:"週報"});shared=true;}catch(e){shared=false;}}
-    if(!shared){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);if(!isMobile)alert("PDFをダウンロードしました。ブラウザ右上のダウンロード（↓）か「ダウンロード」フォルダから開けます。LINE WORKSのトークに、このPDFを添付して送ってください。");}
+    // 「PDFで共有」：作ったPDFをそのまま共有シート（LINE WORKSなど）へ。使えない端末はダウンロードにフォールバック
+    let shared=false,cancelled=false;
+    if(canShareFiles){try{await navigator.share({files:[file],title:"週報",text:cur.tsName?`${cur.tsName}の週報`:"週報"});shared=true;}catch(e){if(e&&e.name==="AbortError")cancelled=true;}}
+    if(!shared&&!cancelled){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);alert("PDFを保存しました。LINE WORKSのトークに、このPDFを添付して送ってください。");}
   }catch(e){alert("PDF作成に失敗しました。もう一度お試しください。");}
   finally{if(btn){btn.disabled=false;btn.textContent=o;}stage.innerHTML="";stage.className="";}
 }
 function makePDF(){generatePDF();}
-async function shareLastPDF(){
-  const p=window.__lastPDF;
-  if(!p){generatePDF();return;}
-  try{
-    if(navigator.canShare&&navigator.canShare({files:[p.file]})){await navigator.share({files:[p.file],title:"週報",text:cur&&cur.tsName?`${cur.tsName}の週報`:"週報"});return;}
-  }catch(e){if(e&&e.name==="AbortError")return;}
-  // 共有が使えない時はダウンロードにフォールバック
-  const a=document.createElement("a");a.href=URL.createObjectURL(p.blob);a.download=p.fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-}
 function copyReport(){navigator.clipboard.writeText(buildText(cur)).then(()=>alert("テキストをコピーしました。")).catch(()=>alert("コピーできませんでした。"));}
 
 async function save(){
