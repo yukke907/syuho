@@ -864,7 +864,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <div id="preview" style="display:none">
     <div class="pad"><div id="sheet"></div></div>
     <div class="pad pv-actions">
-      <div class="hint">下の「PDFで共有」を押すと、PDFを作ってそのままLINE WORKSなどに送れます。（共有が使えない端末では自動でダウンロードされます）</div>
+      <div class="hint">下の「PDFで共有」を押すと印刷画面が開きます。そこの共有（□↑）から「LINE WORKS」を選ぶとトークに送れます。「PDFを保存」から保存もできます。</div>
     </div>
   </div>
 </div>
@@ -879,7 +879,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 </div></div>
 <div class="fab" id="fabPreview" style="display:none"><div class="rowbtn three">
   <button class="btn nav" onclick="editAgain()">もどる</button>
-  <button class="btn go" onclick="generatePDF()">PDFで共有</button>
+  <button class="btn go" onclick="sharePDF()">PDFで共有</button>
   <button class="btn nav" onclick="go('home')">ホーム</button>
 </div></div>
 
@@ -1300,7 +1300,7 @@ function buildSheetHTML(c){
     const td=(c.todos||[]).filter(t=>t.text.trim());
     if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
     const pr=(c.props||[]).filter(x=>x.name.trim());
-    if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="cl2">・${esc(x.name)}${x.status?`　<span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
+    if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="bl2">・${esc(x.name)}${x.status?`<br><span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
     head=`TAIYOSHEET 週報`;const pm=[];if(c.date)pm.push(`報告日 ${fmtD(c.date)}`);if((c.tsName||"").trim())pm.push(`記入者 ${esc(c.tsName)}`);metaHtml=pm.join("　")||"　";
   }
   const photos=c.photos.length?`<div class="sec2 photosec"><h4>写真</h4><div class="sheet-photos">${c.photos.map(p=>`<figure><img src="${p.data}"><figcaption>${esc(p.cap||"")}</figcaption></figure>`).join("")}</div></div>`:"";
@@ -1326,6 +1326,11 @@ function finish(){
 }
 function editAgain(){hideShareBtn();go("editor");showStep();}
 function printPDF(){window.print();}
+function sharePDF(){
+  // 印刷画面を直接開く（iPhoneはそこの共有からLINE WORKSへ、PC・スマホともPDF保存も可）。印刷画面は上揃えで自然に流し込まれる
+  if(cur){cur.finalized=true;try{persist();}catch(e){}}
+  window.print();
+}
 async function ensureLibs(){
   // html2canvas / jsPDF はファイル内に同梱済みのため、ネット接続なしでも利用できる（読み込み確認のみ）
   return typeof html2canvas!=="undefined"&&!!window.jspdf;
