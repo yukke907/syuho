@@ -715,7 +715,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-22b（計画推進部見出し・対象週・ファイル名・PDFで共有）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23a（印刷をやめPDFを直接表示・ヘッダー/フッターなし）</div>
   </div>
 
   <!-- EDITOR -->
@@ -864,7 +864,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <div id="preview" style="display:none">
     <div class="pad"><div id="sheet"></div></div>
     <div class="pad pv-actions">
-      <div class="hint">下の「PDFで共有」を押すと印刷画面が開きます。そこの共有（□↑）から「LINE WORKS」を選ぶとトークに送れます。「PDFを保存」から保存もできます。</div>
+      <div class="hint">下の「PDFで共有」を押すと、きれいなPDF（日付・URLなし）が開きます。スマホはPDF画面の共有ボタン（□↑）から「LINE WORKS」を選ぶと送れます。パソコンは自動でダウンロードされます。</div>
     </div>
   </div>
 </div>
@@ -1334,24 +1334,29 @@ function sharePDF(){
   if(cur){cur.finalized=true;try{persist();}catch(e){}}
   const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   if(isMobile){
-    // スマホ：印刷画面→共有からLINE WORKSへ。保存名は<title>が使われるため一時的に差し替える
-    const prev=document.title;
-    document.title=cur?pdfBaseName(cur):prev;
-    const restore=()=>{document.title=prev;window.removeEventListener("afterprint",restore);};
-    window.addEventListener("afterprint",restore);setTimeout(restore,60000);
-    window.print();
+    // スマホ：印刷（ヘッダー/フッターが付く）を使わず、アプリ製のきれいなPDFを新しいタブで開く。
+    // そのPDF画面の共有ボタンからLINE WORKSへ送れる（＝印刷の日付/URLが付かない）。
+    const w=window.open("","_blank");   // タップ中に同期で開く（ポップアップブロック回避）
+    if(w){try{w.document.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+(cur?esc(pdfBaseName(cur)):"週報")+'</title><body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#334;font-size:16px">PDFを作成中です…</body>');}catch(e){}}
+    const btn=document.querySelector("#fabPreview .btn.go");const o=btn?btn.textContent:"";if(btn){btn.disabled=true;btn.textContent="PDF作成中…";}
+    buildReportPDFBlob().then(blob=>{
+      if(btn){btn.disabled=false;btn.textContent=o;}
+      if(!blob){if(w)try{w.close();}catch(e){}return;}
+      window.__lastPDF={blob};
+      const url=URL.createObjectURL(blob);
+      if(w){try{w.location=url;}catch(e){location.href=url;}}else{location.href=url;}   // 開けなかった時は同じ画面でPDF表示
+      setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},120000);
+    });
   }else{generatePDF();}           // パソコン：ヘッダー/フッターの付かないきれいなPDFを保存（ダウンロード）
 }
 async function ensureLibs(){
   // html2canvas / jsPDF はファイル内に同梱済みのため、ネット接続なしでも利用できる（読み込み確認のみ）
   return typeof html2canvas!=="undefined"&&!!window.jspdf;
 }
-async function generatePDF(){
-  const btn=document.querySelector("#fabPreview .btn.go");const o=btn?btn.textContent:"";
-  const stage=document.getElementById("pdfStage");
-  if(btn){btn.disabled=true;btn.textContent="PDF作成中…";}
+async function buildReportPDFBlob(){
   const ok=await ensureLibs();
-  if(!ok){if(btn){btn.disabled=false;btn.textContent=o;}alert("PDF機能を準備できませんでした。ページを開き直すか、SafariかChromeで開いてお試しください。");return;}
+  if(!ok){alert("PDF機能を準備できませんでした。ページを開き直すか、SafariかChromeで開いてお試しください。");return null;}
+  const stage=document.getElementById("pdfStage");
   stage.className="pdfmode";stage.innerHTML=buildSheetHTML(cur);
   try{
     const imgs=[...stage.querySelectorAll("img")];
@@ -1423,21 +1428,25 @@ async function generatePDF(){
       pdf.addImage(img,"JPEG",imgXmm,yTop,imgWmm,imgHmm);
       y=cut;page++;
     }
+    try{pdf.setProperties({title:pdfBaseName(cur)});}catch(e){}   // PDF内部のタイトル（スマホの共有名に使われることがある）
     const blob=pdf.output("blob");
-    const fname=`${pdfBaseName(cur)}.pdf`;
-    const file=new File([blob],fname,{type:"application/pdf"});
-    window.__lastPDF={blob,file,fname};
-    cur.finalized=true;try{persist();}catch(e){}   // PDFにした＝提出済としてホームに反映
-    const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-    const canShareFiles=!!(navigator.canShare&&navigator.canShare({files:[file]}));
-    // 「PDFで共有」：作ったPDFをそのまま共有シート（LINE WORKSなど）へ。使えない端末はダウンロードにフォールバック
-    let shared=false,cancelled=false;
-    if(canShareFiles){try{await navigator.share({files:[file]});shared=true;}catch(e){if(e&&e.name==="AbortError")cancelled=true;}}   // タイトル/本文を付けるとiOSでファイル対応アプリ（LINE WORKS等）が共有先に出ないことがあるため、ファイルのみ共有
-    if(!shared&&!cancelled){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=pdfDownloadName(cur);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);alert(`PDFを保存しました（ファイル名：${pdfDownloadName(cur)}）。LINE WORKSのトークに、このPDFを添付して送ってください。`);}
-  }catch(e){alert("PDF作成に失敗しました。もう一度お試しください。");}
-  finally{if(btn){btn.disabled=false;btn.textContent=o;}stage.innerHTML="";stage.className="";}
+    return blob;
+  }catch(e){alert("PDF作成に失敗しました。もう一度お試しください。");return null;}
+  finally{stage.innerHTML="";stage.className="";}
 }
-function makePDF(){generatePDF();}
+// パソコン：ヘッダー/フッターの付かないきれいなPDFを直接ダウンロード
+async function generatePDF(){
+  const btn=document.querySelector("#fabPreview .btn.go");const o=btn?btn.textContent:"";
+  if(btn){btn.disabled=true;btn.textContent="PDF作成中…";}
+  const blob=await buildReportPDFBlob();
+  if(btn){btn.disabled=false;btn.textContent=o;}
+  if(!blob)return;
+  window.__lastPDF={blob};
+  if(cur){cur.finalized=true;try{persist();}catch(e){}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=pdfDownloadName(cur);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000);
+  alert(`PDFを保存しました（ファイル名：${pdfDownloadName(cur)}）。LINE WORKSのトークに、このPDFを添付して送ってください。`);
+}
+function makePDF(){sharePDF();}
 function copyReport(){navigator.clipboard.writeText(buildText(cur)).then(()=>alert("テキストをコピーしました。")).catch(()=>alert("コピーできませんでした。"));}
 
 async function save(){
