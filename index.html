@@ -715,7 +715,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23a（印刷をやめPDFを直接表示・ヘッダー/フッターなし）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23b（PDF名を「週報_日付_名前」に）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1347,7 +1347,7 @@ function sharePDF(){
       if(w){try{w.location=url;}catch(e){location.href=url;}}else{location.href=url;}   // 開けなかった時は同じ画面でPDF表示
       setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},120000);
     });
-  }else{generatePDF();}           // パソコン：ヘッダー/フッターの付かないきれいなPDFを保存（ダウンロード）
+  }else{savePDFdesktop();}        // パソコン：日本語ファイル名で保存（対応ブラウザは保存ダイアログ、非対応は英字名でダウンロード）
 }
 async function ensureLibs(){
   // html2canvas / jsPDF はファイル内に同梱済みのため、ネット接続なしでも利用できる（読み込み確認のみ）
@@ -1435,7 +1435,15 @@ async function buildReportPDFBlob(){
   finally{stage.innerHTML="";stage.className="";}
 }
 // パソコン：ヘッダー/フッターの付かないきれいなPDFを直接ダウンロード
-async function generatePDF(){
+// パソコン：日本語ファイル名で保存する。対応ブラウザ(Chrome/Edge)は保存ダイアログに「週報_日付_名前.pdf」を提案。
+// 非対応(Safari/Firefox)はダウンロード属性だが日本語が落ちるため英字名でフォールバック。
+async function savePDFdesktop(){
+  const jaName=`${pdfBaseName(cur)}.pdf`;   // 週報_日付_記入者名.pdf
+  let handle=null,useFS=!!window.showSaveFilePicker;
+  if(useFS){
+    try{handle=await window.showSaveFilePicker({suggestedName:jaName,types:[{description:"PDF",accept:{"application/pdf":[".pdf"]}}]});}
+    catch(e){if(e&&e.name==="AbortError")return;handle=null;}   // キャンセルは中止／未対応は従来ダウンロードへ
+  }
   const btn=document.querySelector("#fabPreview .btn.go");const o=btn?btn.textContent:"";
   if(btn){btn.disabled=true;btn.textContent="PDF作成中…";}
   const blob=await buildReportPDFBlob();
@@ -1443,9 +1451,17 @@ async function generatePDF(){
   if(!blob)return;
   window.__lastPDF={blob};
   if(cur){cur.finalized=true;try{persist();}catch(e){}}
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=pdfDownloadName(cur);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000);
-  alert(`PDFを保存しました（ファイル名：${pdfDownloadName(cur)}）。LINE WORKSのトークに、このPDFを添付して送ってください。`);
+  if(handle){
+    try{const w=await handle.createWritable();await w.write(blob);await w.close();
+      alert(`PDFを保存しました（ファイル名：${jaName}）。LINE WORKSのトークに、このPDFを添付して送ってください。`);return;}
+    catch(e){}
+  }
+  // フォールバック：日本語ファイル名を保持できないブラウザ向けに英字名でダウンロード
+  const asc=pdfDownloadName(cur);
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=asc;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000);
+  alert(`PDFを保存しました（ファイル名：${asc}）。※このブラウザは日本語ファイル名に対応していないため英字になります。LINE WORKSのトークに添付して送ってください。`);
 }
+function generatePDF(){savePDFdesktop();}   // 互換
 function makePDF(){sharePDF();}
 function copyReport(){navigator.clipboard.writeText(buildText(cur)).then(()=>alert("テキストをコピーしました。")).catch(()=>alert("コピーできませんでした。"));}
 
