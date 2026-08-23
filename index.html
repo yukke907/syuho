@@ -715,7 +715,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-07-28（最新版・改ページ／2列区切り／写真4:3 改善）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-22b（計画推進部見出し・対象週・ファイル名・PDFで共有）</div>
   </div>
 
   <!-- EDITOR -->
@@ -917,6 +917,8 @@ function weekLabel(){const t=new Date();const day=(t.getDay()+6)%7;const mon=new
 const todayISO=()=>toLocalISO(new Date());
 function weekSpan(weekISO){if(!weekISO)return"";const mon=parseISO(weekISO);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const f=d=>`${d.getMonth()+1}/${d.getDate()}`;return `${f(mon)}〜${f(sun)}`;}
 function pdfBaseName(c){const who=((c.mode==="plan"?(c.tsName||""):(c.name||"")).trim())||"名前なし";const d=c.date||todayISO();return `週報_${d}_${who}`.replace(/[\\\/:*?"<>|\s]/g,"");}
+// パソコンのダウンロードはブラウザが日本語ファイル名を落としてしまう（download.pdfになる）ため、英字＋日付で確実に名前を付ける（名前に英字があれば併記）
+function pdfDownloadName(c){const raw=(c.mode==="plan"?(c.tsName||""):(c.name||"")).trim();const ascii=raw.replace(/[^\x20-\x7E]/g,"").replace(/[\\\/:*?"<>|]+/g,"").replace(/\s+/g,"");const d=c.date||todayISO();const label=c.mode==="plan"?"TAIYOSHEET":"weekly";return `${label}_${d}${ascii?"_"+ascii:""}.pdf`;}
 const fmtD=iso=>{if(!iso)return"";const p=iso.split("-");return p.length===3?`${+p[1]}/${+p[2]}`:iso;};
 function parseISO(s){if(!s)return new Date();const p=s.split("-");return new Date(+p[0],(+p[1]||1)-1,(+p[2]||1));}
 function dayMD(weekISO,offset,i){const mon=parseISO(weekISO);const d=new Date(mon);d.setDate(mon.getDate()-1+offset+i);return `${d.getMonth()+1}/${d.getDate()}`;}
@@ -1431,7 +1433,7 @@ async function generatePDF(){
     // 「PDFで共有」：作ったPDFをそのまま共有シート（LINE WORKSなど）へ。使えない端末はダウンロードにフォールバック
     let shared=false,cancelled=false;
     if(canShareFiles){try{await navigator.share({files:[file]});shared=true;}catch(e){if(e&&e.name==="AbortError")cancelled=true;}}   // タイトル/本文を付けるとiOSでファイル対応アプリ（LINE WORKS等）が共有先に出ないことがあるため、ファイルのみ共有
-    if(!shared&&!cancelled){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);alert("PDFを保存しました。LINE WORKSのトークに、このPDFを添付して送ってください。");}
+    if(!shared&&!cancelled){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=pdfDownloadName(cur);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);alert(`PDFを保存しました（ファイル名：${pdfDownloadName(cur)}）。LINE WORKSのトークに、このPDFを添付して送ってください。`);}
   }catch(e){alert("PDF作成に失敗しました。もう一度お試しください。");}
   finally{if(btn){btn.disabled=false;btn.textContent=o;}stage.innerHTML="";stage.className="";}
 }
