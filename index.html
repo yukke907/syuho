@@ -171,7 +171,10 @@
   /* PDFシート */
   .sheet{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(16,35,63,.08);overflow:hidden;margin-bottom:16px}
   .sheet-hd{background:var(--navy);color:#fff;font-weight:700;font-size:18px;padding:16px}
-  .sheet-meta{font-size:14px;color:#39434e;padding:12px 16px;border-bottom:1px solid var(--line);line-height:1.9}
+  .sheet-meta{font-size:14px;color:#39434e;padding:14px 16px 16px;border-bottom:1px solid var(--line);line-height:2.1}
+  .sheet-meta .mchip{display:inline-block;margin-right:26px;white-space:nowrap}
+  .sheet-meta .ml{color:#93a0ad;font-size:.82em;margin-right:7px;letter-spacing:.02em}
+  .sheet-meta .mv{color:#1c2733;font-weight:700}
   .sheet-body{padding:8px 16px 18px}
   .sec2{margin-top:16px}
   .sec2 h4{font-size:14px;font-weight:700;color:var(--navy);margin:0 0 6px;border-left:4px solid var(--orange);padding-left:9px}
@@ -201,7 +204,7 @@
   .pdfmode .sheet{width:794px;box-shadow:none;border-radius:0;overflow:hidden}
   .pdfmode .sheet-hd{font-size:21px;padding:15px 20px}
   .pdfmode .sheet-meta{font-size:16px;padding:14px 20px;line-height:2}
-  .pdfmode .sheet-body{padding:16px 22px 22px;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3}
+  .pdfmode .sheet-body{padding:24px 22px 22px;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3}
   .pdfmode .sheet-body.onecol{column-count:1;column-rule:none}
   .pdfmode .sec2{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 14px}
   .pdfmode .sec2.breakok{break-inside:auto;-webkit-column-break-inside:auto}
@@ -249,7 +252,7 @@
     .sheet{box-shadow:none!important;border-radius:0!important}
     .sheet-hd{font-size:21px;padding:15px 20px}
     .sheet-meta{font-size:16px;padding:14px 20px;line-height:2}
-    .sheet-body{padding:14px 20px 20px!important;column-count:2;column-width:88mm;column-gap:22px;column-rule:1px solid #C2C9D3}
+    .sheet-body{padding:22px 20px 20px!important;column-count:2;column-width:88mm;column-gap:22px;column-rule:1px solid #C2C9D3}
     .sheet-body.onecol{column-count:1;column-width:auto;column-rule:none}
     .sheet-body .sec2{break-inside:avoid;page-break-inside:avoid;margin-top:0;margin-bottom:14px}
     .sheet-body .sec2.breakok{break-inside:auto;page-break-inside:auto}
@@ -719,7 +722,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23d（ヘッダー情報の文字を大きく）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23e（ヘッダー情報を整理・余白と区切りを改善）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1282,9 +1285,10 @@ function daysHTML(arr,off,week){return arr.map((d,i)=>`<div class="dl2"><b>${day
 function buildSheetHTML(c){
   let body="",head,metaHtml;
   if(c.mode==="genba"){
-    const mp=[];if(c.kokiStart||c.kokiEnd)mp.push(`工期 ${fmtD(c.kokiStart)||"…"} ～ ${fmtD(c.kokiEnd)||"…"}`);if(c.deki!=="")mp.push(`出来高 ${c.deki}%`);if((c.riritsu+"").trim())mp.push(`利益率 ${c.riritsu}%`);
-    const sb=[];if(c.date)sb.push(`報告日 ${fmtD(c.date)}`);if(c.tanto)sb.push(`担当 ${esc(c.tanto)}`);
-    metaHtml=[mp.join("｜"),sb.join("　")].filter(Boolean).join("<br>")||"　";
+    const chip=(l,v)=>`<span class="mchip"><span class="ml">${l}</span><b class="mv">${v}</b></span>`;
+    const mp=[];if(c.kokiStart||c.kokiEnd)mp.push(chip("工期",`${fmtD(c.kokiStart)||"…"} ～ ${fmtD(c.kokiEnd)||"…"}`));if(c.deki!=="")mp.push(chip("出来高",`${c.deki}%`));if((c.riritsu+"").trim())mp.push(chip("利益率",`${c.riritsu}%`));
+    const sb=[];if(c.date)sb.push(chip("報告日",fmtD(c.date)));if(c.tanto)sb.push(chip("担当",esc(c.tanto)));
+    metaHtml=[mp.join(""),sb.join("")].filter(Boolean).join("<br>")||"　";
     const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);
     if(mo.length)body+=sec("金額",mo.join(""));
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
@@ -1309,7 +1313,7 @@ function buildSheetHTML(c){
     if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
     const pr=(c.props||[]).filter(x=>x.name.trim());
     if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="bl2">・${esc(x.name)}${x.status?`<br><span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
-    head=`TAIYOSHEET 計画推進部 週報`;const pm=[];if(c.date)pm.push(`報告日 ${fmtD(c.date)}`);const sp=weekSpan(c.week);if(sp)pm.push(`対象週 ${sp}`);if((c.tsName||"").trim())pm.push(`記入者 ${esc(c.tsName)}`);metaHtml=pm.join("　")||"　";
+    head=`TAIYOSHEET 計画推進部 週報`;const pchip=(l,v)=>`<span class="mchip"><span class="ml">${l}</span><b class="mv">${v}</b></span>`;const pm=[];if(c.date)pm.push(pchip("報告日",fmtD(c.date)));const sp=weekSpan(c.week);if(sp)pm.push(pchip("対象週",sp));if((c.tsName||"").trim())pm.push(pchip("記入者",esc(c.tsName)));metaHtml=pm.join("")||"　";
   }
   const photos=c.photos.length?`<div class="sec2 photosec"><h4>写真</h4><div class="sheet-photos">${c.photos.map(p=>`<figure><img src="${p.data}"><figcaption>${esc(p.cap||"")}</figcaption></figure>`).join("")}</div></div>`:"";
   const bodyCls=c.mode==="plan"?"sheet-body onecol":"sheet-body";   // TAIYOSHEET部は1列（縦に詰めてまとまりよく）
