@@ -171,7 +171,7 @@
   /* PDFシート */
   .sheet{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(16,35,63,.08);overflow:hidden;margin-bottom:16px}
   .sheet-hd{background:var(--navy);color:#fff;font-weight:700;font-size:18px;padding:16px}
-  .sheet-meta{font-size:13px;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--line);line-height:1.8}
+  .sheet-meta{font-size:13px;color:#39434e;padding:12px 16px;border-bottom:1px solid var(--line);line-height:1.8}
   .sheet-body{padding:8px 16px 18px}
   .sec2{margin-top:16px}
   .sec2 h4{font-size:14px;font-weight:700;color:var(--navy);margin:0 0 6px;border-left:4px solid var(--orange);padding-left:9px}
@@ -181,6 +181,8 @@
   .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
   .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
   .bl2{font-size:14px;padding:3px 0;line-height:1.6;padding-left:1.1em;text-indent:-1.1em}
+  .phh{margin:11px 0 6px}
+  .phhu{display:inline-block;font-weight:700;font-size:14px;color:var(--navy);border-bottom:2px solid var(--orange);padding-bottom:2px}
   .sheet-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px;align-items:start}
   .sheet-photos figure{margin:0}
   .sheet-photos img{width:100%;aspect-ratio:4/3;height:auto;object-fit:cover;border-radius:6px;display:block;border:1px solid var(--line)}
@@ -206,6 +208,7 @@
   .pdfmode .sec2.photosec{column-span:all;-webkit-column-span:all;margin-top:16px}
   .pdfmode .grp-blk{break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px}
   .pdfmode .sec2 h4{font-size:16px;margin:0 0 7px;border-left:none;padding-left:0;border-bottom:2px solid var(--orange);display:inline-block;padding-bottom:3px}
+  .pdfmode .phhu{font-size:15px;padding-bottom:3px}
   .pdfmode .sec2.wide{column-span:all;-webkit-column-span:all;margin-top:6px}
   .pdfmode .tailwrap{column-span:all;-webkit-column-span:all;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3;margin-top:12px}
   .pdfmode .tailwrap .sec2{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 12px}
@@ -262,7 +265,8 @@
     .cl2,.dl2,.bl2{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid}
     .grp-blk{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:10px}
     .sec2 h4{break-after:avoid;page-break-after:avoid}
-    .cl2.phh{break-after:avoid;page-break-after:avoid}
+    .phh{break-after:avoid;page-break-after:avoid}
+    .phhu{font-size:15px;padding-bottom:3px}
     .sheet-photos{grid-template-columns:repeat(2,1fr)!important;gap:12px;align-items:start}
     .sheet-photos img{width:100%!important;aspect-ratio:4/3;height:auto!important;object-fit:cover;border:1px solid var(--line)}
     .sheet-photos figcaption{font-size:14px;margin-top:5px}
@@ -715,7 +719,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23b（PDF名を「週報_日付_名前」に）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23c（工事部：PDF名・小見出し下線・情報を濃く）</div>
   </div>
 
   <!-- EDITOR -->
@@ -916,9 +920,9 @@ function weekKey(d){const t=d?new Date(d):new Date();t.setHours(0,0,0,0);const d
 function weekLabel(){const t=new Date();const day=(t.getDay()+6)%7;const mon=new Date(t);mon.setDate(t.getDate()-day);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const f=d=>`${d.getMonth()+1}/${d.getDate()}`;return `${f(mon)}–${f(sun)}`;}
 const todayISO=()=>toLocalISO(new Date());
 function weekSpan(weekISO){if(!weekISO)return"";const mon=parseISO(weekISO);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const f=d=>`${d.getMonth()+1}/${d.getDate()}`;return `${f(mon)}〜${f(sun)}`;}
-function pdfBaseName(c){const who=((c.mode==="plan"?(c.tsName||""):(c.name||"")).trim())||"名前なし";const d=c.date||todayISO();return `週報_${d}_${who}`.replace(/[\\\/:*?"<>|\s]/g,"");}
+function pdfBaseName(c){const who=((c.mode==="plan"?(c.tsName||""):(c.tanto||"")).trim())||"名前なし";const d=c.date||todayISO();return `週報_${d}_${who}`.replace(/[\\\/:*?"<>|\s]/g,"");}
 // パソコンのダウンロードはブラウザが日本語ファイル名を落としてしまう（download.pdfになる）ため、英字＋日付で確実に名前を付ける（名前に英字があれば併記）
-function pdfDownloadName(c){const raw=(c.mode==="plan"?(c.tsName||""):(c.name||"")).trim();const ascii=raw.replace(/[^\x20-\x7E]/g,"").replace(/[\\\/:*?"<>|]+/g,"").replace(/\s+/g,"");const d=c.date||todayISO();const label=c.mode==="plan"?"TAIYOSHEET":"weekly";return `${label}_${d}${ascii?"_"+ascii:""}.pdf`;}
+function pdfDownloadName(c){const raw=(c.mode==="plan"?(c.tsName||""):(c.tanto||"")).trim();const ascii=raw.replace(/[^\x20-\x7E]/g,"").replace(/[\\\/:*?"<>|]+/g,"").replace(/\s+/g,"");const d=c.date||todayISO();const label=c.mode==="plan"?"TAIYOSHEET":"weekly";return `${label}_${d}${ascii?"_"+ascii:""}.pdf`;}
 const fmtD=iso=>{if(!iso)return"";const p=iso.split("-");return p.length===3?`${+p[1]}/${+p[2]}`:iso;};
 function parseISO(s){if(!s)return new Date();const p=s.split("-");return new Date(+p[0],(+p[1]||1)-1,(+p[2]||1));}
 function dayMD(weekISO,offset,i){const mon=parseISO(weekISO);const d=new Date(mon);d.setDate(mon.getDate()-1+offset+i);return `${d.getMonth()+1}/${d.getDate()}`;}
@@ -1287,7 +1291,7 @@ function buildSheetHTML(c){
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
     if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`,"breakok");
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
-    if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="cl2 phh" style="margin-top:2px;font-weight:700">${ph.phase}（${done}/${ph.items.length}）</div>${items}</div>`;}).join("");body+=`<div class="sec2 breakok"><h4>打合せ確認項目</h4>${rows}</div>`;}
+    if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>${items}</div>`;}).join("");body+=`<div class="sec2 breakok"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
     let tail="";
     if(ms.length)tail+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""));
