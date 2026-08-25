@@ -184,6 +184,7 @@
   .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
   .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
   .bl2{font-size:14px;padding:3px 0;line-height:1.6;padding-left:1.1em;text-indent:-1.1em}
+  .mdate{color:#7c8a97;white-space:nowrap}
   .phh{margin:11px 0 6px}
   .phhu{display:inline-block;font-weight:700;font-size:14px;color:var(--navy);border-bottom:2px solid var(--orange);padding-bottom:2px}
   .sheet-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px;align-items:start}
@@ -722,7 +723,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23e（ヘッダー情報を整理・余白と区切りを改善）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23g（末尾項目を2列に自然に流す）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1297,11 +1298,10 @@ function buildSheetHTML(c){
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
     if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>${items}</div>`;}).join("");body+=`<div class="sec2 breakok"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
-    let tail="";
-    if(ms.length)tail+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""));
-    if(c.kenan.trim())tail+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`);
-    if(c.issue.trim())tail+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`);
-    if(tail)body+=`<div class="tailwrap">${tail}</div>`;   // 全幅の中で内部2列（中央線を通しつつ、まとまりごと動いて取り残しを防ぐ）
+    // 末尾の項目も本文の2列にそのまま流し込む（横のラインをそろえない）
+    if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="bl2">・${esc(m.text)} <span class="mdate">${m.date?fmtDW(m.date):"未定"}</span></div>`).join(""),"breakok");
+    if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"breakok");
+    if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"breakok");
     head=`週間報告　${esc(c.name)||"（物件名未記入）"}`;
   }else{
     const tsArr=k=>{const a=c[k];if(Array.isArray(a))return a.map(s=>(s||"").trim()).filter(Boolean);return (c[k==="tsThisList"?"tsThis":"tsNext"]||"").split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean);};
