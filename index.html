@@ -242,7 +242,7 @@
     body.wideedit .chk .cdate{flex-basis:148px}   /* PCでは日付欄を広げて年月日をフル表示 */
     body.wideedit #livePreview::before{content:"プレビュー（このままPDFになります）";display:block;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:700;flex:none}
   }
-  .pbreak{position:absolute;left:0;right:0;height:0;border-top:2px dashed #e2554e;z-index:6;pointer-events:none}
+  .pbreak{position:absolute;left:0;height:0;border-top:2px dashed #e2554e;z-index:6;pointer-events:none}
   .pbreak .pbl{position:absolute;right:0;top:-10px;background:#e2554e;color:#fff;font-size:11px;font-weight:700;line-height:1;padding:3px 8px;border-radius:4px 0 0 4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
   .pbcap{text-align:center;font-size:12px;font-weight:700;color:#c23c35;margin:10px auto 0;flex:none}
   @media print{
@@ -727,7 +727,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-26a（PC：プレビューに改ページ位置を表示・できた→PDFで直接保存）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-26c（工事部PDFを左右の列で独立ページ割り・文字切れ/空白ページ防止・プレビュー一致）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1080,46 +1080,95 @@ function renderLive(){                            // 右ペインに、実際の
   sc.style.cssText="width:794px;transform:scale("+s+");transform-origin:top left";
   const natH=sheet?sheet.offsetHeight:0;
   box.style.cssText="position:relative;width:"+Math.round(794*s)+"px;height:"+Math.round(natH*s)+"px;overflow:hidden";
-  // 改ページ位置の表示：実際のPDFと同じ計算で境目を出し、どこでページが分かれるか分かるようにする
+  // 改ページ位置の表示：実際のPDFと同じ計算(planPages)で、列ごとの区切りを出す
+  // ※プレビューはtransform:scaleで縮小しているため、planPagesが返す座標もその縮小済み座標＝そのままtopに使える
   if(sheet){
-    const pb=computePageBreaks(sheet);
-    const total=pb.cuts.length+1;
-    pb.cuts.forEach((cy,i)=>{
+    const plan=planPages(sheet);
+    const line=(x,w,y,label)=>{
       const mk=document.createElement("div");mk.className="pbreak";
-      mk.style.top=Math.round(cy*s)+"px";
-      mk.innerHTML='<span class="pbl">✂ ここで改ページ（'+(i+2)+'ページ目へ）</span>';
+      mk.style.left=Math.round(x)+"px";mk.style.width=Math.round(w)+"px";mk.style.top=Math.round(y)+"px";
+      if(label)mk.innerHTML='<span class="pbl">'+label+'</span>';
       box.appendChild(mk);
-    });
-    box.insertAdjacentHTML("afterend",'<div class="pbcap">全 '+total+' ページ（赤い破線が改ページの位置です）</div>');
+    };
+    const inner=b=>b.slice(1,-1);   // 先頭0と末尾Hを除いた区切り
+    if(plan.twoCol){
+      inner(plan.leftBounds).forEach((y,i)=>line(0,plan.midX,y,"◀左列 "+(i+2)+"ページ目へ"));
+      inner(plan.rightBounds).forEach((y,i)=>line(plan.midX,plan.W-plan.midX,y,"右列 "+(i+2)+"ページ目へ▶"));
+    }else{
+      inner(plan.oneBounds).forEach((y,i)=>line(0,plan.W,y,(i+2)+"ページ目へ"));
+    }
+    inner(plan.photoBounds).forEach(y=>line(0,plan.W,y,"写真ページへ"));
+    box.insertAdjacentHTML("afterend",'<div class="pbcap">全 '+plan.pages.length+' ページ（赤い破線が改ページの位置。左右の列はそれぞれの区切りで分かれます）</div>');
   }
 }
-// 実際のPDF生成(buildReportPDFBlob)と同じロジックで、ページの分割位置(CSS px)を求める
-function computePageBreaks(sheetEl){
-  const cssW=794;
-  const trect=sheetEl.getBoundingClientRect();
-  const H=sheetEl.offsetHeight;
-  const rel=el=>{const r=el.getBoundingClientRect();return {t:r.top-trect.top,b:r.bottom-trect.top};};
-  const hz=[...sheetEl.querySelectorAll(".cl2,.dl2,.sec2 h4,.sec2 p,figure,.grp-blk")].map(rel).filter(h=>h.b>h.t+1);
-  sheetEl.querySelectorAll(".sec2 h4").forEach(h4=>{const nx=h4.nextElementSibling;if(!nx)return;const a=rel(h4),b=rel(nx),t=Math.min(a.t,b.t),bt=Math.max(a.b,b.b);if(bt>t+1)hz.push({t,b:bt});});
-  sheetEl.querySelectorAll(".tailwrap,.sec2.wide").forEach(s=>{const r=rel(s);if(r.b>r.t+1)hz.push(r);});
-  const pageHnat=297*cssW/210;
-  const naturalPages=Math.max(1,Math.ceil((H-1)/pageHnat));
-  let dispScale=1,pageH=pageHnat;
-  if(naturalPages>=2){
-    const lastFill=(H-(naturalPages-1)*pageHnat)/pageHnat;
-    const need=H/((naturalPages-1)*pageHnat);
-    if(lastFill<0.55&&need<=1.25){dispScale=1/need;pageH=pageHnat/dispScale;}
+// PDF生成とプレビューで共通のページ割り付け計算。渡した要素の座標系(CSS px)で返す。
+// 2列（工事部）は左右の列を独立にページ分割する（新聞のように、各列を自分の区切りで切る）。
+// これにより「左右で内容の量が違っても、文章や項目の途中で切れない」。
+// ・小さなブロック（チェック項目・日付行・見出し＋直後・図・金額ブロック）は途中で割らない
+// ・長い段落は実際の「行の下端」を測り、行の境目でだけ分割（行の途中では絶対に切らない）
+// ・写真は全幅の別ブロックとして最後にページ割り
+function planPages(el){
+  const trect=el.getBoundingClientRect();
+  const W=trect.width||794,H=trect.height;
+  const rel=n=>{const r=n.getBoundingClientRect();return {t:r.top-trect.top,b:r.bottom-trect.top,cx:(r.left+r.right)/2-trect.left};};
+  const pageH=297/210*W,midX=W/2;
+  const bodyEl=el.querySelector(".sheet-body");
+  const twoCol=!!(bodyEl&&!bodyEl.classList.contains("onecol"));
+  const bodyTop=bodyEl?rel(bodyEl).t:0;
+  let photosTop=H;el.querySelectorAll(".sec2.photosec").forEach(p=>{const t=rel(p).t;if(t<photosTop)photosTop=t;});
+  const atoms=[],paras=[];
+  el.querySelectorAll(".cl2,.dl2,.bl2,figure,.grp-blk").forEach(n=>{const r=rel(n);if(r.b>r.t+1)atoms.push(r);});
+  el.querySelectorAll(".sec2 h4").forEach(h4=>{const a=rel(h4);let t=a.t,b=a.b;const nx=h4.nextElementSibling;if(nx){const c=rel(nx);t=Math.min(t,c.t);b=Math.max(b,c.b);}if(b>t+1)atoms.push({t,b,cx:a.cx});});
+  el.querySelectorAll(".sec2 p").forEach(n=>{const r=rel(n);const lines=[];try{const rng=document.createRange();rng.selectNodeContents(n);[...rng.getClientRects()].forEach(rc=>{const y=rc.bottom-trect.top;if(!lines.length||Math.abs(y-lines[lines.length-1])>1)lines.push(y);});}catch(e){}if(lines.length>1)paras.push({t:r.t,b:r.b,cx:r.cx,lines});else if(r.b>r.t+1)atoms.push(r);});
+  const maxAtom=pageH*0.94;
+  const A=atoms.filter(a=>(a.b-a.t)<=maxAtom);
+  function colBounds(as,ps,top,bottom,effH){
+    const bounds=[top];let y=top,guard=0;
+    while(y<bottom-1&&guard++<400){
+      let cut=Math.min(y+effH,bottom);let changed=true,g2=0;
+      while(changed&&g2++<5000){changed=false;
+        for(const a of as){if(a.t>y+2&&a.t<cut-0.5&&a.b>cut+0.5){cut=a.t;changed=true;}}
+        for(const pr of ps){if(pr.t<cut-0.5&&pr.b>cut+0.5){let best=-1;for(const lb of pr.lines){if(lb<=cut+0.5&&lb>y+2&&lb>best)best=lb;}if(best>0){if(best<cut-0.5){cut=best;changed=true;}}else if(pr.t>y+2&&pr.t<cut-0.5){cut=pr.t;changed=true;}}}
+      }
+      if(cut<=y+effH*0.03)cut=Math.min(y+effH,bottom);
+      bounds.push(cut);y=cut;
+    }
+    if(bounds[bounds.length-1]<bottom-0.5)bounds.push(bottom);
+    return bounds;
   }
-  const cuts=[];let y=0,page=0;
-  while(y<H-1&&page<50){
-    let cut=Math.min(y+pageH,H);
-    let changed=true,guard=0;
-    while(changed&&guard++<800){changed=false;for(const h of hz){if(h.t>y+2&&h.t<cut-0.5&&h.b>cut+0.5){cut=h.t;changed=true;}}}
-    if(cut<=y+12)cut=Math.min(y+pageH,H);
-    if(cut<H-1)cuts.push(cut);
-    y=cut;page++;
+  const cbot=(as,ps)=>{let m=0;as.forEach(a=>{if(a.b>m)m=a.b;});ps.forEach(p=>{if(p.b>m)m=p.b;});return m;};
+  const fitScale=(cb)=>{const np=Math.max(1,Math.ceil((cb-1)/pageH));if(np>=2){const lastFill=(cb-(np-1)*pageH)/pageH;const need=cb/((np-1)*pageH);if(lastFill<0.55&&need<=1.25)return 1/need;}return 1;};
+  const inReg=o=>o.t<photosTop-0.5;
+  let leftBounds=[],rightBounds=[],oneBounds=[],dispScale=1;
+  if(twoCol){
+    const la=A.filter(a=>a.cx<midX&&inReg(a)),ra=A.filter(a=>a.cx>=midX&&inReg(a));
+    const lp=paras.filter(p=>p.cx<midX&&inReg(p)),rp=paras.filter(p=>p.cx>=midX&&inReg(p));
+    dispScale=fitScale(Math.max(cbot(la,lp),cbot(ra,rp)));const eH=pageH/dispScale;
+    leftBounds=colBounds(la,lp,0,photosTop,eH);rightBounds=colBounds(ra,rp,0,photosTop,eH);
+  }else{
+    const oa=A.filter(inReg),op=paras.filter(inReg);
+    dispScale=fitScale(cbot(oa,op));const eH=pageH/dispScale;
+    oneBounds=colBounds(oa,op,0,photosTop,eH);
   }
-  return {cuts,pageH,dispScale,H};
+  let photoBounds=[];
+  if(photosTop<H-1){const pa=A.filter(a=>a.t>=photosTop-0.5);photoBounds=colBounds(pa,[],photosTop,H,pageH);}
+  const pages=[];
+  if(twoCol){
+    const n=Math.max(leftBounds.length,rightBounds.length)-1;
+    for(let k=0;k<n;k++){
+      const lt=leftBounds[Math.min(k,leftBounds.length-1)],lB=leftBounds[Math.min(k+1,leftBounds.length-1)];
+      const rt=rightBounds[Math.min(k,rightBounds.length-1)],rB=rightBounds[Math.min(k+1,rightBounds.length-1)];
+      const ops=[];
+      if(lB>lt+1)ops.push({sx:0,sw:midX,t:lt,b:lB});
+      if(rB>rt+1)ops.push({sx:midX,sw:W-midX,t:rt,b:rB});
+      if(ops.length)pages.push(ops);
+    }
+  }else{
+    for(let k=0;k<oneBounds.length-1;k++){if(oneBounds[k+1]>oneBounds[k]+1)pages.push([{sx:0,sw:W,t:oneBounds[k],b:oneBounds[k+1]}]);}
+  }
+  for(let k=0;k<photoBounds.length-1;k++){if(photoBounds[k+1]>photoBounds[k]+1)pages.push([{sx:0,sw:W,t:photoBounds[k],b:photoBounds[k+1]}]);}
+  if(!pages.length)pages.push([{sx:0,sw:W,t:0,b:H}]);
+  return {pages,dispScale,twoCol,midX,W,H,bodyTop,photosTop,leftBounds,rightBounds,oneBounds,photoBounds,pageH};
 }
 function nextStep(){
   collect();
@@ -1342,9 +1391,9 @@ function buildSheetHTML(c){
     if(mo.length)body+=sec("金額",mo.join(""));
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
-    if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`,"breakok");
+    if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`);
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
-    if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>${items}</div>`;}).join("");body+=`<div class="sec2 breakok"><h4>打合せ確認項目</h4>${rows}</div>`;}
+    if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
     let tail="";
     if(ms.length)tail+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""));
@@ -1436,59 +1485,25 @@ async function buildReportPDFBlob(){
     const {jsPDF}=window.jspdf;const pdf=new jsPDF("p","mm","a4");
     const pw=210,ph=297;
     const scale=canvas.width/target.offsetWidth;
-    const trect=target.getBoundingClientRect();
-    // 2列の中央区切り線：html2canvasはCSSのcolumn-ruleを描画しないため、キャンバスに直接引いてPC版と見た目を合わせる
-    const bodyEl=target.querySelector(".sheet-body");
-    if(bodyEl&&!bodyEl.classList.contains("onecol")){   // 1列（TAIYOSHEET部）は中央線を引かない
-      const bs=getComputedStyle(bodyEl),bodyRect=bodyEl.getBoundingClientRect();
-      const padT=parseFloat(bs.paddingTop)||0,padB=parseFloat(bs.paddingBottom)||0;
-      // 写真の手前まで線を引く（本文＝2列＋tailwrapの内部2列はすべて中央線を通す。写真は全幅なので線なし）
-      const spanEls=[...target.querySelectorAll(".sec2.photosec")];
-      let spanTop=Infinity;spanEls.forEach(el=>{const tp=el.getBoundingClientRect().top;if(tp<spanTop)spanTop=tp;});
-      const rTop=(bodyRect.top-trect.top+padT)*scale;
-      const rBot=((isFinite(spanTop)?spanTop:bodyRect.bottom-padB)-trect.top)*scale;
-      if(rBot>rTop+2){
-        const lw=Math.max(1,Math.round(scale)),cx=Math.round(canvas.width/2),cctx=canvas.getContext("2d");
-        cctx.save();cctx.setTransform(1,0,0,1,0,0);   // html2canvasが残すscale変換をリセット（デバイスピクセルで描く）
-        cctx.fillStyle="#C2C9D3";cctx.fillRect(cx-Math.floor(lw/2),Math.round(rTop),lw,Math.round(rBot-rTop));cctx.restore();
-      }
-    }
-    const rel=el=>{const r=el.getBoundingClientRect();return {t:(r.top-trect.top)*scale,b:(r.bottom-trect.top)*scale};};
-    const hz=[...target.querySelectorAll(".cl2,.dl2,.sec2 h4,.sec2 p,figure,.grp-blk")].map(rel).filter(h=>h.b>h.t+1);
-    // 見出し(h4)は直後の最初の内容ブロックまでを1かたまりとして扱い、見出しだけがページ末尾に取り残されないようにする（PC版のbreak-after:avoid相当）
-    target.querySelectorAll(".sec2 h4").forEach(h4=>{
-      const nx=h4.nextElementSibling;if(!nx)return;
-      const a=rel(h4),b=rel(nx),t=Math.min(a.t,b.t),bt=Math.max(a.b,b.b);
-      if(bt>t+1)hz.push({t,b:bt});
-    });
-    // 末尾のまとまり（tailwrap）と全幅セクションは丸ごと1かたまりにして、途中で分割・取り残しが起きないようにする
-    target.querySelectorAll(".tailwrap,.sec2.wide").forEach(s=>{const r=rel(s);if(r.b>r.t+1)hz.push(r);});
-    const pageHnat=ph*canvas.width/pw;   // A4 1ページ分のキャンバス行数（原寸）
-    const naturalPages=Math.max(1,Math.ceil((canvas.height-1)/pageHnat));
-    // 内容が1ページを少しだけ超える場合、全体をわずかに縮小して1枚少なく収める（スカスカな最終ページを防ぐ）
-    let dispScale=1,pageH=pageHnat;
-    if(naturalPages>=2){
-      const lastFill=(canvas.height-(naturalPages-1)*pageHnat)/pageHnat;   // 最終ページの埋まり具合
-      const need=canvas.height/((naturalPages-1)*pageHnat);                // 1枚減らして収めるのに必要な縮小率の逆数
-      if(lastFill<0.55&&need<=1.25){dispScale=1/need;pageH=pageHnat/dispScale;}
-    }
+    // ページ割り付けは共通関数で計算（PCプレビューと完全に同じロジック＝見た目と一致）
+    // 2列は左右を独立にページ分割し、各ページを「左スライス＋右スライス」で合成する（文章・項目の途中で切れない）
+    const plan=planPages(target);             // CSS px（等倍）
+    const dispScale=plan.dispScale;
     const imgWmm=pw*dispScale,imgXmm=(pw-imgWmm)/2;   // 縮小時は左右に均等マージンを付けて中央寄せ
-    let y=0,page=0;
-    while(y<canvas.height-1&&page<50){
-      let cut=Math.min(y+pageH,canvas.height);
-      let changed=true,guard=0;
-      while(changed&&guard++<800){changed=false;for(const h of hz){if(h.t>y+2&&h.t<cut-0.5&&h.b>cut+0.5){cut=h.t;changed=true;}}}
-      if(cut<=y+12)cut=Math.min(y+pageH,canvas.height);
-      const sliceH=Math.max(1,Math.round(cut-y));
-      const c2=document.createElement("canvas");c2.width=canvas.width;c2.height=sliceH;
-      const ctx=c2.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c2.width,sliceH);
-      ctx.drawImage(canvas,0,Math.round(y),canvas.width,sliceH,0,0,canvas.width,sliceH);
-      const img=c2.toDataURL("image/jpeg",0.9);
-      if(page>0)pdf.addPage();
-      const imgHmm=sliceH*imgWmm/canvas.width;
-      const yTop=0;   // 上揃え（内容が少なくても下が余る形）
-      pdf.addImage(img,"JPEG",imgXmm,yTop,imgWmm,imgHmm);
-      y=cut;page++;
+    const cw=canvas.width,midpx=Math.round(plan.midX*scale),lw=Math.max(1,Math.round(scale)),dTop=Math.round(plan.bodyTop*scale);
+    for(let pi=0;pi<plan.pages.length;pi++){
+      const ops=plan.pages[pi];
+      let maxH=0;ops.forEach(o=>{maxH=Math.max(maxH,o.b-o.t);});
+      const pcH=Math.max(1,Math.round(maxH*scale));
+      const c2=document.createElement("canvas");c2.width=cw;c2.height=pcH;
+      const ctx=c2.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,cw,pcH);
+      ops.forEach(o=>{const sx=Math.round(o.sx*scale),sw=Math.round(o.sw*scale),sy=Math.round(o.t*scale),sh=Math.max(1,Math.round((o.b-o.t)*scale));ctx.drawImage(canvas,sx,sy,sw,sh,sx,0,sw,sh);});
+      // 2列ページには中央の区切り線を引く（見出し帯より下だけ）。html2canvasはcolumn-ruleを描かないため手描き
+      if(plan.twoCol&&ops.length===2){const top=(ops[0].t<=plan.bodyTop+1)?dTop:0;ctx.fillStyle="#C2C9D3";ctx.fillRect(midpx-Math.floor(lw/2),top,lw,pcH-top);}
+      const img=c2.toDataURL("image/jpeg",0.92);
+      if(pi>0)pdf.addPage();
+      const imgHmm=pcH*imgWmm/cw;
+      pdf.addImage(img,"JPEG",imgXmm,0,imgWmm,imgHmm);   // 上揃え（内容が少なくても下が余る形）
     }
     try{pdf.setProperties({title:pdfBaseName(cur)});}catch(e){}   // PDF内部のタイトル（スマホの共有名に使われることがある）
     const blob=pdf.output("blob");
