@@ -242,6 +242,9 @@
     body.wideedit .chk .cdate{flex-basis:148px}   /* PCでは日付欄を広げて年月日をフル表示 */
     body.wideedit #livePreview::before{content:"プレビュー（このままPDFになります）";display:block;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:700;flex:none}
   }
+  .pbreak{position:absolute;left:0;right:0;height:0;border-top:2px dashed #e2554e;z-index:6;pointer-events:none}
+  .pbreak .pbl{position:absolute;right:0;top:-10px;background:#e2554e;color:#fff;font-size:11px;font-weight:700;line-height:1;padding:3px 8px;border-radius:4px 0 0 4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .pbcap{text-align:center;font-size:12px;font-weight:700;color:#c23c35;margin:10px auto 0;flex:none}
   @media print{
     html,body{background:#fff!important;width:210mm!important;margin:0!important;padding:0!important}
     body *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -724,7 +727,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23l（工事部PDF名を週報_担当_日付_物件名に）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-26a（PC：プレビューに改ページ位置を表示・できた→PDFで直接保存）</div>
   </div>
 
   <!-- EDITOR -->
@@ -884,7 +887,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <button class="btn nav mobonly" onclick="prevStep()">もどる</button>
   <button class="btn go mobonly" id="nextBtn" onclick="nextStep()">次へ →</button>
   <button class="btn nav wideonly" onclick="go('home')">ホーム</button>
-  <button class="btn go wideonly" onclick="finish()">できた → PDF</button>
+  <button class="btn go wideonly" onclick="finishPC()">できた → PDF</button>
 </div></div>
 <div class="fab" id="fabPreview" style="display:none"><div class="rowbtn three">
   <button class="btn nav" onclick="editAgain()">もどる</button>
@@ -1077,6 +1080,46 @@ function renderLive(){                            // 右ペインに、実際の
   sc.style.cssText="width:794px;transform:scale("+s+");transform-origin:top left";
   const natH=sheet?sheet.offsetHeight:0;
   box.style.cssText="position:relative;width:"+Math.round(794*s)+"px;height:"+Math.round(natH*s)+"px;overflow:hidden";
+  // 改ページ位置の表示：実際のPDFと同じ計算で境目を出し、どこでページが分かれるか分かるようにする
+  if(sheet){
+    const pb=computePageBreaks(sheet);
+    const total=pb.cuts.length+1;
+    pb.cuts.forEach((cy,i)=>{
+      const mk=document.createElement("div");mk.className="pbreak";
+      mk.style.top=Math.round(cy*s)+"px";
+      mk.innerHTML='<span class="pbl">✂ ここで改ページ（'+(i+2)+'ページ目へ）</span>';
+      box.appendChild(mk);
+    });
+    box.insertAdjacentHTML("afterend",'<div class="pbcap">全 '+total+' ページ（赤い破線が改ページの位置です）</div>');
+  }
+}
+// 実際のPDF生成(buildReportPDFBlob)と同じロジックで、ページの分割位置(CSS px)を求める
+function computePageBreaks(sheetEl){
+  const cssW=794;
+  const trect=sheetEl.getBoundingClientRect();
+  const H=sheetEl.offsetHeight;
+  const rel=el=>{const r=el.getBoundingClientRect();return {t:r.top-trect.top,b:r.bottom-trect.top};};
+  const hz=[...sheetEl.querySelectorAll(".cl2,.dl2,.sec2 h4,.sec2 p,figure,.grp-blk")].map(rel).filter(h=>h.b>h.t+1);
+  sheetEl.querySelectorAll(".sec2 h4").forEach(h4=>{const nx=h4.nextElementSibling;if(!nx)return;const a=rel(h4),b=rel(nx),t=Math.min(a.t,b.t),bt=Math.max(a.b,b.b);if(bt>t+1)hz.push({t,b:bt});});
+  sheetEl.querySelectorAll(".tailwrap,.sec2.wide").forEach(s=>{const r=rel(s);if(r.b>r.t+1)hz.push(r);});
+  const pageHnat=297*cssW/210;
+  const naturalPages=Math.max(1,Math.ceil((H-1)/pageHnat));
+  let dispScale=1,pageH=pageHnat;
+  if(naturalPages>=2){
+    const lastFill=(H-(naturalPages-1)*pageHnat)/pageHnat;
+    const need=H/((naturalPages-1)*pageHnat);
+    if(lastFill<0.55&&need<=1.25){dispScale=1/need;pageH=pageHnat/dispScale;}
+  }
+  const cuts=[];let y=0,page=0;
+  while(y<H-1&&page<50){
+    let cut=Math.min(y+pageH,H);
+    let changed=true,guard=0;
+    while(changed&&guard++<800){changed=false;for(const h of hz){if(h.t>y+2&&h.t<cut-0.5&&h.b>cut+0.5){cut=h.t;changed=true;}}}
+    if(cut<=y+12)cut=Math.min(y+pageH,H);
+    if(cut<H-1)cuts.push(cut);
+    y=cut;page++;
+  }
+  return {cuts,pageH,dispScale,H};
 }
 function nextStep(){
   collect();
@@ -1342,6 +1385,11 @@ function finish(){
   if(!persist()){alert(curMode==="genba"?"物件名を入れてください。":"内容を入れてください。");return;}
   hideShareBtn();renderSheet(cur);go("preview");
 }
+// パソコン：右側にプレビューが常に見えているため、確認画面をはさまず「できた→PDF」で直接保存する
+function finishPC(){
+  if(!persist()){alert(curMode==="genba"?"物件名を入れてください。":"内容を入れてください。");return;}
+  savePDFdesktop();
+}
 function editAgain(){hideShareBtn();go("editor");showStep();}
 function printPDF(){window.print();}
 function sharePDF(){
@@ -1458,7 +1506,7 @@ async function savePDFdesktop(){
     try{handle=await window.showSaveFilePicker({suggestedName:jaName,types:[{description:"PDF",accept:{"application/pdf":[".pdf"]}}]});}
     catch(e){if(e&&e.name==="AbortError")return;handle=null;}   // キャンセルは中止／未対応は従来ダウンロードへ
   }
-  const btn=document.querySelector("#fabPreview .btn.go");const o=btn?btn.textContent:"";
+  const btn=document.querySelector("#fabPreview .btn.go")||document.querySelector("#fabEdit .btn.go.wideonly");const o=btn?btn.textContent:"";
   if(btn){btn.disabled=true;btn.textContent="PDF作成中…";}
   const blob=await buildReportPDFBlob();
   if(btn){btn.disabled=false;btn.textContent=o;}
