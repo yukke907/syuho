@@ -724,7 +724,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23k（改行位置を自然に・日付や語句を割らない）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-23l（工事部PDF名を週報_担当_日付_物件名に）</div>
   </div>
 
   <!-- EDITOR -->
@@ -925,9 +925,13 @@ function weekKey(d){const t=d?new Date(d):new Date();t.setHours(0,0,0,0);const d
 function weekLabel(){const t=new Date();const day=(t.getDay()+6)%7;const mon=new Date(t);mon.setDate(t.getDate()-day);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const f=d=>`${d.getMonth()+1}/${d.getDate()}`;return `${f(mon)}–${f(sun)}`;}
 const todayISO=()=>toLocalISO(new Date());
 function weekSpan(weekISO){if(!weekISO)return"";const mon=parseISO(weekISO);const sun=new Date(mon);sun.setDate(mon.getDate()+6);const f=d=>`${d.getMonth()+1}/${d.getDate()}`;return `${f(mon)}〜${f(sun)}`;}
-function pdfBaseName(c){const who=((c.mode==="plan"?(c.tsName||""):(c.tanto||"")).trim())||"名前なし";const d=c.date||todayISO();return `週報_${d}_${who}`.replace(/[\\\/:*?"<>|\s]/g,"");}
+function pdfBaseName(c){const d=c.date||todayISO();const clean=s=>s.replace(/[\\\/:*?"<>|\s]/g,"");
+  if(c.mode==="plan"){const who=((c.tsName||"").trim())||"名前なし";return clean(`週報_${d}_${who}`);}
+  const who=((c.tanto||"").trim())||"名前なし";const ymd=d.replace(/-/g,"");const name=((c.name||"").trim())||"物件名なし";return clean(`週報_${who}_${ymd}_${name}`);}
 // パソコンのダウンロードはブラウザが日本語ファイル名を落としてしまう（download.pdfになる）ため、英字＋日付で確実に名前を付ける（名前に英字があれば併記）
-function pdfDownloadName(c){const raw=(c.mode==="plan"?(c.tsName||""):(c.tanto||"")).trim();const ascii=raw.replace(/[^\x20-\x7E]/g,"").replace(/[\\\/:*?"<>|]+/g,"").replace(/\s+/g,"");const d=c.date||todayISO();const label=c.mode==="plan"?"TAIYOSHEET":"weekly";return `${label}_${d}${ascii?"_"+ascii:""}.pdf`;}
+function pdfDownloadName(c){const toAscii=s=>(s||"").replace(/[^\x20-\x7E]/g,"").replace(/[\\\/:*?"<>|]+/g,"").replace(/\s+/g,"");const d=c.date||todayISO();
+  if(c.mode==="plan"){const a=toAscii(c.tsName);return `TAIYOSHEET_${d}${a?"_"+a:""}.pdf`;}
+  const ymd=d.replace(/-/g,"");const a=[toAscii(c.tanto),toAscii(c.name)].filter(Boolean).join("_");return `weekly_${ymd}${a?"_"+a:""}.pdf`;}
 const fmtD=iso=>{if(!iso)return"";const p=iso.split("-");return p.length===3?`${+p[1]}/${+p[2]}`:iso;};
 function parseISO(s){if(!s)return new Date();const p=s.split("-");return new Date(+p[0],(+p[1]||1)-1,(+p[2]||1));}
 function dayMD(weekISO,offset,i){const mon=parseISO(weekISO);const d=new Date(mon);d.setDate(mon.getDate()-1+offset+i);return `${d.getMonth()+1}/${d.getDate()}`;}
