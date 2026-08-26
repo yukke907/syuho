@@ -213,7 +213,7 @@
   .pdfmode .sec2 h4{font-size:16px;margin:0 0 7px;border-left:none;padding-left:0;border-bottom:2px solid var(--orange);display:inline-block;padding-bottom:3px}
   .pdfmode .phhu{font-size:15px;padding-bottom:3px}
   .pdfmode .sec2.wide{column-span:all;-webkit-column-span:all;margin-top:6px}
-  .pdfmode .tailwrap{column-span:all;-webkit-column-span:all;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3;margin-top:26px;border-top:2px solid #D7DCE2;padding-top:18px}
+  .pdfmode .tailwrap{column-span:all;-webkit-column-span:all;column-count:1;margin-top:26px;border-top:2px solid #D7DCE2;padding-top:18px}
   .pdfmode .tailwrap .sec2{break-inside:avoid;-webkit-column-break-inside:avoid;margin:0 0 12px}
   .pdfmode .tailwrap .sec2 h4{border-bottom-color:var(--red)}
   .pdfmode .sec2 p{font-size:15px;line-height:1.8}
@@ -263,7 +263,7 @@
     .sheet-body .sec2.photosec{column-span:all;-webkit-column-span:all;margin-top:16px}
     .sec2 h4{font-size:16px;margin:0 0 7px;border-left:none;padding-left:0;border-bottom:2px solid var(--orange);display:inline-block;padding-bottom:3px}
     .sec2.wide{column-span:all;-webkit-column-span:all;margin-top:6px}
-    .tailwrap{column-span:all;-webkit-column-span:all;column-count:2;column-gap:22px;column-rule:1px solid #C2C9D3;margin-top:26px;border-top:2px solid #D7DCE2;padding-top:18px}
+    .tailwrap{column-span:all;-webkit-column-span:all;column-count:1;margin-top:26px;border-top:2px solid #D7DCE2;padding-top:18px}
     .tailwrap .sec2{break-inside:avoid;page-break-inside:avoid;margin:0 0 12px}
     .tailwrap .sec2 h4{border-bottom-color:var(--red)}
     .sec2 p{font-size:15px;line-height:1.8}
@@ -727,7 +727,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-26c（工事部PDFを左右の列で独立ページ割り・文字切れ/空白ページ防止・プレビュー一致）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-26d（工事部PDF：末尾セクションを全幅にして余白を圧縮・列は独立ページ割りで文字切れなし）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1097,7 +1097,7 @@ function renderLive(){                            // 右ペインに、実際の
     }else{
       inner(plan.oneBounds).forEach((y,i)=>line(0,plan.W,y,(i+2)+"ページ目へ"));
     }
-    inner(plan.photoBounds).forEach(y=>line(0,plan.W,y,"写真ページへ"));
+    plan.fwBreaks.forEach((y,i)=>line(0,plan.W,y,(plan.pages.length>1?"次のページへ":"")));
     box.insertAdjacentHTML("afterend",'<div class="pbcap">全 '+plan.pages.length+' ページ（赤い破線が改ページの位置。左右の列はそれぞれの区切りで分かれます）</div>');
   }
 }
@@ -1138,20 +1138,21 @@ function planPages(el){
   }
   const cbot=(as,ps)=>{let m=0;as.forEach(a=>{if(a.b>m)m=a.b;});ps.forEach(p=>{if(p.b>m)m=p.b;});return m;};
   const fitScale=(cb)=>{const np=Math.max(1,Math.ceil((cb-1)/pageH));if(np>=2){const lastFill=(cb-(np-1)*pageH)/pageH;const need=cb/((np-1)*pageH);if(lastFill<0.55&&need<=1.25)return 1/need;}return 1;};
-  const inReg=o=>o.t<photosTop-0.5;
+  // 末尾セクション（今後の予定・懸案事項・クレーム＝tailwrap）と写真は全幅で扱う。その上端を2列領域の下端とする
+  let tailTop=H;el.querySelectorAll(".tailwrap").forEach(t=>{const y=rel(t).t;if(y<tailTop)tailTop=y;});
+  const twoColBottom=Math.min(tailTop,photosTop);
+  const inReg=o=>o.t<twoColBottom-0.5;
   let leftBounds=[],rightBounds=[],oneBounds=[],dispScale=1;
   if(twoCol){
     const la=A.filter(a=>a.cx<midX&&inReg(a)),ra=A.filter(a=>a.cx>=midX&&inReg(a));
     const lp=paras.filter(p=>p.cx<midX&&inReg(p)),rp=paras.filter(p=>p.cx>=midX&&inReg(p));
     dispScale=fitScale(Math.max(cbot(la,lp),cbot(ra,rp)));const eH=pageH/dispScale;
-    leftBounds=colBounds(la,lp,0,photosTop,eH);rightBounds=colBounds(ra,rp,0,photosTop,eH);
+    leftBounds=colBounds(la,lp,0,twoColBottom,eH);rightBounds=colBounds(ra,rp,0,twoColBottom,eH);
   }else{
     const oa=A.filter(inReg),op=paras.filter(inReg);
     dispScale=fitScale(cbot(oa,op));const eH=pageH/dispScale;
-    oneBounds=colBounds(oa,op,0,photosTop,eH);
+    oneBounds=colBounds(oa,op,0,twoColBottom,eH);
   }
-  let photoBounds=[];
-  if(photosTop<H-1){const pa=A.filter(a=>a.t>=photosTop-0.5);photoBounds=colBounds(pa,[],photosTop,H,pageH);}
   const pages=[];
   if(twoCol){
     const n=Math.max(leftBounds.length,rightBounds.length)-1;
@@ -1159,16 +1160,32 @@ function planPages(el){
       const lt=leftBounds[Math.min(k,leftBounds.length-1)],lB=leftBounds[Math.min(k+1,leftBounds.length-1)];
       const rt=rightBounds[Math.min(k,rightBounds.length-1)],rB=rightBounds[Math.min(k+1,rightBounds.length-1)];
       const ops=[];
-      if(lB>lt+1)ops.push({sx:0,sw:midX,t:lt,b:lB});
-      if(rB>rt+1)ops.push({sx:midX,sw:W-midX,t:rt,b:rB});
+      if(lB>lt+1)ops.push({sx:0,sw:midX,t:lt,b:lB,dy:0,col:true});
+      if(rB>rt+1)ops.push({sx:midX,sw:W-midX,t:rt,b:rB,dy:0,col:true});
       if(ops.length)pages.push(ops);
     }
   }else{
-    for(let k=0;k<oneBounds.length-1;k++){if(oneBounds[k+1]>oneBounds[k]+1)pages.push([{sx:0,sw:W,t:oneBounds[k],b:oneBounds[k+1]}]);}
+    for(let k=0;k<oneBounds.length-1;k++){if(oneBounds[k+1]>oneBounds[k]+1)pages.push([{sx:0,sw:W,t:oneBounds[k],b:oneBounds[k+1],dy:0}]);}
   }
-  for(let k=0;k<photoBounds.length-1;k++){if(photoBounds[k+1]>photoBounds[k]+1)pages.push([{sx:0,sw:W,t:photoBounds[k],b:photoBounds[k+1]}]);}
-  if(!pages.length)pages.push([{sx:0,sw:W,t:0,b:H}]);
-  return {pages,dispScale,twoCol,midX,W,H,bodyTop,photosTop,leftBounds,rightBounds,oneBounds,photoBounds,pageH};
+  // 全幅領域（末尾＋写真）：最後の本文ページの余白に続けて入れ、入りきらなければ新しいページへ
+  const fwBreaks=[];
+  const fwA=A.filter(a=>a.t>=twoColBottom-0.5),fwP=paras.filter(p=>p.t>=twoColBottom-0.5);
+  if(twoColBottom<H-1&&(fwA.length||fwP.length)){
+    let y=twoColBottom,curPage=pages.length?pages[pages.length-1]:null;
+    let curUsed=curPage?Math.max.apply(null,curPage.map(o=>(o.dy||0)+(o.b-o.t))):0;
+    const gap=20,guard0=[0];
+    while(y<H-1&&guard0[0]++<60){
+      const canMerge=!!curPage&&(pageH-curUsed-gap)>pageH*0.18;
+      const cap=canMerge?(pageH-curUsed-gap):pageH;
+      const bb=colBounds(fwA,fwP,y,H,cap);
+      const cut=(bb.length>1&&bb[1]>y+1)?bb[1]:Math.min(y+cap,H);
+      if(canMerge){curPage.push({sx:0,sw:W,t:y,b:cut,dy:curUsed+gap});curPage=null;}
+      else{fwBreaks.push(y);pages.push([{sx:0,sw:W,t:y,b:cut,dy:0}]);}
+      y=cut;
+    }
+  }
+  if(!pages.length)pages.push([{sx:0,sw:W,t:0,b:H,dy:0}]);
+  return {pages,dispScale,twoCol,midX,W,H,bodyTop,twoColBottom,leftBounds,rightBounds,oneBounds,fwBreaks,pageH};
 }
 function nextStep(){
   collect();
@@ -1493,13 +1510,15 @@ async function buildReportPDFBlob(){
     const cw=canvas.width,midpx=Math.round(plan.midX*scale),lw=Math.max(1,Math.round(scale)),dTop=Math.round(plan.bodyTop*scale);
     for(let pi=0;pi<plan.pages.length;pi++){
       const ops=plan.pages[pi];
-      let maxH=0;ops.forEach(o=>{maxH=Math.max(maxH,o.b-o.t);});
-      const pcH=Math.max(1,Math.round(maxH*scale));
+      let maxH=0,colBot=0;
+      ops.forEach(o=>{const dyp=Math.round((o.dy||0)*scale),h=Math.max(1,Math.round((o.b-o.t)*scale));maxH=Math.max(maxH,dyp+h);if(o.col)colBot=Math.max(colBot,dyp+h);});
+      const pcH=Math.max(1,maxH);
       const c2=document.createElement("canvas");c2.width=cw;c2.height=pcH;
       const ctx=c2.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,cw,pcH);
-      ops.forEach(o=>{const sx=Math.round(o.sx*scale),sw=Math.round(o.sw*scale),sy=Math.round(o.t*scale),sh=Math.max(1,Math.round((o.b-o.t)*scale));ctx.drawImage(canvas,sx,sy,sw,sh,sx,0,sw,sh);});
-      // 2列ページには中央の区切り線を引く（見出し帯より下だけ）。html2canvasはcolumn-ruleを描かないため手描き
-      if(plan.twoCol&&ops.length===2){const top=(ops[0].t<=plan.bodyTop+1)?dTop:0;ctx.fillStyle="#C2C9D3";ctx.fillRect(midpx-Math.floor(lw/2),top,lw,pcH-top);}
+      ops.forEach(o=>{const sx=Math.round(o.sx*scale),sw=Math.round(o.sw*scale),sy=Math.round(o.t*scale),sh=Math.max(1,Math.round((o.b-o.t)*scale)),dyp=Math.round((o.dy||0)*scale);ctx.drawImage(canvas,sx,sy,sw,sh,sx,dyp,sw,sh);});
+      // 2列部分には中央の区切り線を引く（見出し帯より下・列の高さぶんだけ）。html2canvasはcolumn-ruleを描かないため手描き
+      const colOps=ops.filter(o=>o.col);
+      if(plan.twoCol&&colOps.length===2){const top=(colOps[0].t<=plan.bodyTop+1)?dTop:0;ctx.fillStyle="#C2C9D3";ctx.fillRect(midpx-Math.floor(lw/2),top,lw,colBot-top);}
       const img=c2.toDataURL("image/jpeg",0.92);
       if(pi>0)pdf.addPage();
       const imgHmm=pcH*imgWmm/cw;
