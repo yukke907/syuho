@@ -724,7 +724,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-26e（工事部PDF：左右の列に順番どおり流し込んで余白を圧縮・文字切れなし／プレビューは各ページ表示）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-27a（計画推進部：先週の「来週の予定」を翌週の「今週の予定」に自動引き継ぎ）</div>
   </div>
 
   <!-- EDITOR -->
@@ -823,7 +823,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <input id="tsName" placeholder="お名前（次回も自動で入ります）" oninput="cur.tsName=this.value;scheduleSave()">
         </div>
         <div class="grp">
-          <div class="gh">今週の予定（報告・課題・相談）</div>
+          <div class="gh">今週の予定（報告・課題・相談）<span class="carrytag" id="tsReflectTag" style="display:none">先週の「来週の予定」を反映</span></div>
           <div id="tsThisList"></div>
           <button class="chkadd" onclick="addTs('tsThisList')">＋追加</button>
         </div>
@@ -996,7 +996,7 @@ function emptyReport(mode){
   return {id:uid(),projectId:null,week:weekKey(),date:todayISO(),mode:mode||"genba",
     name:"",kokiStart:"",kokiEnd:"",deki:"",riritsu:"",tanto:"",contract:"",budget01:"",budget02:"",kotei:"順調",report:"",
     thisDays:blankDays(),nextDays:blankDays(),checks:defChecks(),miles:[],kenan:"",issue:"",
-    pNext:"",tsThis:"",tsNext:"",tsThisList:[],tsNextList:[],tsName:"",todos:[],props:[],photos:[],reflected:false,finalized:false};
+    pNext:"",tsThis:"",tsNext:"",tsThisList:[],tsNextList:[],tsName:"",todos:[],props:[],photos:[],reflected:false,tsReflected:false,finalized:false};
 }
 function seedFromPrev(p,prev){
   const r=emptyReport(p.mode);r.projectId=p.id;r.name=p.name;r.date=todayISO();
@@ -1009,6 +1009,12 @@ function seedFromPrev(p,prev){
     r.props=(prev.props||[]).map(x=>({name:x.name,status:x.status||""}));
     r.todos=(prev.todos||[]).filter(t=>!t.done).map(t=>({text:t.text,done:false}));
     r.reflected=(prev.nextDays||[]).some(d=>!d.off&&d.text.trim());
+    // 計画推進部（TAIYOSHEET部）：先週の「来週の予定」→今週の「今週の予定」へ引き継ぐ（工事部の日別引き継ぎと同じ考え方）
+    const prevNext=Array.isArray(prev.tsNextList)&&prev.tsNextList.length?prev.tsNextList:((prev.tsNext||"").split(/\r?\n/));
+    r.tsThisList=prevNext.map(s=>(s||"").replace(/^[・\-•\s]+/,"").trim()).filter(Boolean);
+    r.tsNextList=[];
+    r.tsName=prev.tsName||r.tsName;
+    r.tsReflected=r.tsThisList.length>0;
   }
   return r;
 }
@@ -1235,6 +1241,7 @@ function loadEditor(){
   if(!c.todos)c.todos=[];if(!c.props)c.props=[];
   c.checks.forEach(ph=>ph.items.forEach(i=>{if(i.date===undefined)i.date="";}));
   document.getElementById("reflectTag").style.display=c.reflected?"":"none";
+  const tsTag=document.getElementById("tsReflectTag");if(tsTag)tsTag.style.display=c.tsReflected?"":"none";
   renderKotei();renderDayGrid("thisDays","thisDayList");renderDayGrid("nextDays","nextDayList");
   renderChecks();renderMiles();renderTodos();renderProps();renderPhotos();
   renderTs("tsThisList");renderTs("tsNextList");
