@@ -239,6 +239,8 @@
   .pdfmode .sec2.wide{column-span:all;-webkit-column-span:all;margin-top:6px}
   .pdfmode .sec2.tailsec h4{border-bottom-color:var(--red)}
   .pdfmode .sec2 p{font-size:15px;line-height:1.8}
+  /* PDF化(html2canvas)では auto-phrase を使わず標準の改行にして、実描画と行数がズレて文字が切れるのを防ぐ */
+  .pdfmode .sec2 p,.pdfmode .cl2,.pdfmode .dl2,.pdfmode .bl2,.pdfmode .ck-nm{word-break:normal;line-break:strict;overflow-wrap:anywhere}
   .pdfmode .dl2{font-size:15px;padding:2px 0}.pdfmode .dl2 b{min-width:3.4em}
   .pdfmode .cl2{font-size:15px;padding:2px 0}
   .pdfmode .cklist{font-size:15px;row-gap:3px}
@@ -749,7 +751,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09p（スマホPDF：先に生成→共有シート／同タブ表示に変更し「作成中」停止を解消）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09q（工事部PDF：段落を列またぎで切らない・改行方式を安定化し文字切れを解消）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1173,17 +1175,9 @@ function planPages(el){
     units.push(u);
   });
   if(!units.length)return {pages:[[{sx:0,sw:W,t:0,b:H,dx:0,dy:0}]],W,H,pageH,midX,cols,bodyTop:0};
-  // 見出しは直後のブロックと必ずセットにする（見出しだけが列末尾に取り残されないように）
-  const merged=[];
-  for(let i=0;i<units.length;i++){
-    const u=units[i];
-    if(u.head&&i+1<units.length){
-      const nx=units[i+1];i++;
-      if(nx.para)merged.push({t:u.t,b:nx.b,l:u.l,w:u.w,cx:u.cx,head:true,para:true,lines:nx.lines});
-      else merged.push({t:u.t,b:nx.b,l:u.l,w:u.w,cx:u.cx,head:true});
-    }else merged.push(u);
-  }
-  units.length=0;units.push(...merged);
+  // 注意：元のシートはCSS2段組のため、見出しと直後の本文が別々の段に入ることがある。
+  //  以前はそれらを1ユニットに結合していたが、別段だと座標が壊れて文字切れ・見出し取り残しの原因になる。
+  //  結合はやめ、各ユニットは独立して再配置し、見出しは下の配置ループで“次のブロックと一緒に置く”よう先読みで改列する。
   const lu=units.filter(u=>u.cx<midX),ru=units.filter(u=>u.cx>=midX);
   const leftX=lu.length?Math.min.apply(null,lu.map(u=>u.l)):0;
   const rightX=ru.length?Math.min.apply(null,ru.map(u=>u.l)):leftX;
@@ -1200,7 +1194,7 @@ function planPages(el){
   const adv=()=>{if(cols===2&&col===0)col=1;else{col=0;page++;}y=0;};
   for(let i=0;i<units.length;i++){
     const u=units[i];
-    if(u.para){
+    if(u.para&&(u.b-u.t)>(pageH-topPadN)){   // 1列に収まらないほど長い段落だけ行分割。収まる段落は下の分岐で1ブロックのまま配置（列またぎで文字を切らない）
       let curT=u.t,li=0;
       while(li<u.lines.length){
         const g=(y>0)?((li===0&&u.head)?secGap:itemGap):0;
@@ -1214,7 +1208,12 @@ function planPages(el){
       }
     }else{
       const uh=u.b-u.t,gap=(y>0)?(u.head?secGap:itemGap):0;
-      if(y>0&&(y+gap+uh)>capOf(page))adv();
+      // 見出しは、次のブロックと一緒に置けない（＝見出しだけ列末尾に残る）なら先に改列する
+      if(u.head&&i+1<units.length){
+        const nx=units[i+1];const nxH=Math.max(0,nx.b-nx.t);
+        const need=uh+secGap+Math.min(nxH,pageH-topPadN);   // 見出し＋次ブロック（長すぎる場合は1列分まで）
+        if(y>0&&(y+gap+need)>capOf(page))adv();
+      }else if(y>0&&(y+gap+uh)>capOf(page))adv();
       const py=y+((y>0)?(u.head?secGap:itemGap):0);
       put(page,{sX:srcX(u),sT:u.t,sB:u.b,col,py});
       y=py+uh;
@@ -1557,7 +1556,7 @@ function buildSheetHTML(c){
       return `<div class="grp-blk">${head}${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
     // 末尾セクション（今後の重要な予定・懸案事項・クレーム）は赤い見出し下線で区別しつつ、他と同じく2列に流し込む
-    if(ms.length)body+=sec("今後の重要な予定",`<div class="cklist mlist">${ms.map(m=>`<span class="ck-nm">${esc(m.text)}</span><span class="ck-dt">${m.date?fmtDW(m.date):"未定"}</span>`).join("")}</div>`,"tailsec");
+    if(ms.length)body+=sec("今後の重要な予定",`<div class="grp-blk"><div class="cklist mlist">${ms.map(m=>`<span class="ck-nm">${esc(m.text)}</span><span class="ck-dt">${m.date?fmtDW(m.date):"未定"}</span>`).join("")}</div></div>`,"tailsec");
     if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"tailsec");
     if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"tailsec");
     head=`週間報告　${esc(c.name)||"（物件名未記入）"}`;
