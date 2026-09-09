@@ -749,7 +749,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09n（金額を右そろえで桁そろえ・「現在」削除／今後の予定の日付も縦そろえ）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09o（TAIYOSHEET部PDFが「作成中」で止まる不具合を修正）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1567,13 +1567,13 @@ function buildSheetHTML(c){
     const tThis=tsArr("tsThisList"),tNext=tsArr("tsNextList");
     if(tThis.length)body+=sec("今週の予定（報告・課題・相談）",bl(tThis),"breakok");
     if(tNext.length)body+=sec("来週の予定（報告・課題・相談）",bl(tNext),"breakok");
-    const td=(c.todos||[]).filter(t=>t.text.trim());
+    const td=(c.todos||[]).filter(t=>t&&(t.text||"").trim());
     if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
-    const pr=(c.props||[]).filter(x=>x.name.trim());
+    const pr=(c.props||[]).filter(x=>x&&(x.name||"").trim());
     if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="bl2">・${esc(x.name)}${x.status?`<br><span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
     head=`TAIYOSHEET 計画推進部 週報`;const pchip=(l,v)=>`<span class="mchip"><span class="ml">${l}</span><b class="mv">${v}</b></span>`;const pm=[];if(c.date)pm.push(pchip("報告日",fmtD(c.date)));const sp=weekSpan(c.week);if(sp)pm.push(pchip("対象週",sp));if((c.tsName||"").trim())pm.push(pchip("記入者",esc(c.tsName)));metaHtml=pm.join("")||"　";
   }
-  const photos=c.photos.length?`<div class="sec2 photosec"><h4>写真</h4><div class="sheet-photos">${c.photos.map(p=>`<figure><img src="${p.data}"><figcaption>${esc(p.cap||"")}</figcaption></figure>`).join("")}</div></div>`:"";
+  const photos=(c.photos&&c.photos.length)?`<div class="sec2 photosec"><h4>写真</h4><div class="sheet-photos">${c.photos.map(p=>`<figure><img src="${p.data}"><figcaption>${esc(p.cap||"")}</figcaption></figure>`).join("")}</div></div>`:"";
   const bodyCls=c.mode==="plan"?"sheet-body onecol":"sheet-body";   // TAIYOSHEET部は1列（縦に詰めてまとまりよく）
   return `<div class="sheet"><div class="sheet-hd">${head}</div><div class="sheet-meta">${metaHtml}</div><div class="${bodyCls}">${body}${photos}</div></div>`;
 }
@@ -1617,6 +1617,10 @@ function sharePDF(){
       const url=URL.createObjectURL(blob);
       if(w){try{w.location=url;}catch(e){location.href=url;}}else{location.href=url;}   // 開けなかった時は同じ画面でPDF表示
       setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},120000);
+    }).catch(()=>{   // 予期せぬ失敗でも「作成中」で止めない：ボタンを戻し、作成中タブを閉じる
+      if(btn){btn.disabled=false;btn.textContent=o;}
+      if(w){try{w.close();}catch(e){}}
+      alert("PDF作成に失敗しました。もう一度お試しください。");
     });
   }else{savePDFdesktop();}        // パソコン：日本語ファイル名で保存（対応ブラウザは保存ダイアログ、非対応は英字名でダウンロード）
 }
@@ -1629,8 +1633,8 @@ async function buildReportPDFBlob(){
   if(!ok){alert("PDF機能を準備できませんでした。ページを開き直すか、SafariかChromeで開いてお試しください。");return null;}
   window.__pdfBuilding=true;
   const stage=document.getElementById("pdfStage");
-  stage.className="pdfmode";stage.innerHTML=buildSheetHTML(cur);
   try{
+    stage.className="pdfmode";stage.innerHTML=buildSheetHTML(cur);   // 生成に失敗しても必ずcatch/finallyに入る（「作成中」で止まらない）
     const imgs=[...stage.querySelectorAll("img")];
     await Promise.all(imgs.map(im=>im.complete?Promise.resolve():new Promise(r=>{im.onload=im.onerror=r;})));
     if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(e){}}
