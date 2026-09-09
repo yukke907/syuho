@@ -726,7 +726,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09a（工事部：改善率・増減金額・入金日を追加／PDF出力では提出済にしない）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09b（工事部：増減金額を請負金額の下に・「入金」→「請求入金」・仮保存ボタン追加）</div>
   </div>
 
   <!-- EDITOR -->
@@ -746,11 +746,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <div class="gh">物件・工期・出来高 <span class="carrytag">自動引き継ぎ</span></div>
           <div class="fld"><label>物件名</label><input id="fName" placeholder=""></div>
           <div class="fld"><label>請負金額（円）</label><input id="fContract" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
+          <div class="fld"><label>増減金額（請負金額の増減・円）</label><input id="fZougen" type="text" inputmode="numeric" placeholder="実数精算などで請負金額が増減した額" oninput="this.value=fmtMoney(this.value)"></div>
           <div class="row fld">
             <div><label>実行予算01（円）</label><input id="fBudget01" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
             <div><label>実行予算02 現在（円）</label><input id="fBudget02" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
           </div>
-          <div class="fld"><label>増減金額（円）</label><input id="fZougen" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
           <div class="fld"><label>工期</label><div class="row"><input id="fKokiStart" type="date"><input id="fKokiEnd" type="date"></div></div>
           <div class="fld"><label>出来高（％）</label><input id="fDeki" type="number" inputmode="decimal" min="0" max="100" placeholder="65"></div>
           <div class="row fld">
@@ -883,8 +883,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
 <!-- 下部の操作 -->
 <div class="fab" id="fabHome"><button class="btn" onclick="newReport()">＋ 新しい週報をつくる</button></div>
-<div class="fab" id="fabEdit" style="display:none"><div class="rowbtn">
+<div class="fab" id="fabEdit" style="display:none"><div class="rowbtn three">
   <button class="btn nav mobonly" onclick="prevStep()">もどる</button>
+  <button class="btn nav" onclick="draftSave()">仮保存</button>
   <button class="btn go mobonly" id="nextBtn" onclick="nextStep()">次へ →</button>
   <button class="btn nav wideonly" onclick="go('home')">ホーム</button>
   <button class="btn go wideonly" onclick="finishPC()">できた → PDF</button>
@@ -908,7 +909,7 @@ const CHECK_DEF=[
   {phase:"着工前",hasDate:false,items:[["内定通知書","各業種へ通知"],["施工店手配",""],["実行予算","01/02作成・承認"],["発注書発行",""],["着工準備①","現地確認・見本焼き"],["着工準備②","安全書類・災防協"],["着工準備③","着工前MTG・工区割図"]]},
   {phase:"工種別 開始日程",hasDate:true,items:[["共通仮設工事",""],["足場仮設工事",""],["下地調査",""],["下地補修工事",""],["高圧洗浄工事",""],["鉄部塗装工事",""],["外壁塗装工事",""],["防水工事",""],["長尺シート工事",""],["足場解体工事",""],["クリーニング工事",""],["下地検査（社内検査）",""]]},
   {phase:"竣工図書・引渡し（依頼事項）",hasDate:false,items:[["変更契約依頼",""],["保証書・出荷証明依頼",""],["下地補修図依頼",""],["竣工図書作成",""],["引渡し書類作成",""],["各種押印",""],["引渡し",""],["引継ぎ書入力",""],["竣工後会議",""],["竣工図書回覧",""],["メンテカード提出",""],["安全書類提出",""],["竣工後収支報告",""]]},
-  {phase:"入金",hasDate:true,addLabel:"請求",items:[["請求1回目",""],["請求2回目",""],["請求3回目",""]]}
+  {phase:"請求入金",hasDate:true,addLabel:"請求",items:[["請求1回目",""],["請求2回目",""],["請求3回目",""]]}
 ];
 const ICON_BLDG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 21V9h4a2 2 0 0 1 2 2v10"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>';
 const ICON_CLIP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M9 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><path d="M8 12h8M8 16h5"/></svg>';
@@ -954,6 +955,12 @@ function scheduleSave(){if(__saveTO)clearTimeout(__saveTO);__saveTO=setTimeout(d
 let __lastToast=0;
 function doAutoSave(){__saveTO=null;try{if(cur&&persist()){const now=Date.now();if(now-__lastToast>4000){__lastToast=now;saveToast("自動保存しました");}}}catch(e){}}
 function saveToast(msg){let t=document.getElementById("saveToast");if(!t){t=document.createElement("div");t.id="saveToast";t.className="savetoast";document.body.appendChild(t);}t.textContent=msg;t.classList.add("show");clearTimeout(t.__to);t.__to=setTimeout(()=>t.classList.remove("show"),1400);}
+// 入力途中の仮保存：今の内容を下書きとして保存（提出済にはしない）。あとで「ホーム」から続きを入力できる
+function draftSave(){
+  if(!cur)return;
+  if(!persist()){alert(curMode==="genba"?"物件名を入れてください。":"氏名・部署を入れてください。");return;}
+  saveToast("仮保存しました（下書き）");
+}
 function agAll(){document.querySelectorAll("#editor textarea").forEach(ag);}
 
 function go(s){
@@ -1447,7 +1454,7 @@ function buildSheetHTML(c){
     {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};const C=num(c.contract),B1=num(c.budget01),B2=num(c.budget02);if(isFinite(C)&&C>0&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/C*100;mp.push(chip("改善率",(kz>=0?"+":"")+kz.toFixed(1)+"%"));}}
     const sb=[];if(c.date)sb.push(chip("報告日",fmtD(c.date)));if(c.tanto)sb.push(chip("担当",esc(c.tanto)));
     metaHtml=[mp.join(""),sb.join("")].filter(Boolean).join("<br>")||"　";
-    const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);if((c.zougen+"").trim())mo.push(`<div class="cl2">増減金額　<b>${yen(c.zougen)}</b></div>`);
+    const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.zougen+"").trim())mo.push(`<div class="cl2">増減金額　<b>${yen(c.zougen)}</b></div>`);if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);
     if(mo.length)body+=sec("金額",mo.join(""));
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
@@ -1637,7 +1644,7 @@ document.addEventListener("input",e=>{if(e.target&&e.target.tagName==="TEXTAREA"
 ["input","change","click"].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest("#editor"))scheduleLive();}));
 function normalizeState(){
   const def={};CHECK_DEF.forEach(p=>def[p.phase]={hasDate:p.hasDate,addLabel:p.addLabel||""});
-  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";});});});
+  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(ph.phase==="入金")ph.phase="請求入金";if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";});});});
 }
 // 画面幅が変わったら（PC⇔スマホ表示の切替・回転）編集画面を作り直す（入力内容は保持）
 window.matchMedia("(min-width:900px)").addEventListener("change",()=>{
