@@ -46,6 +46,8 @@
   textarea{resize:none;overflow:hidden;line-height:1.6}
   .row{display:flex;gap:12px}.row>*{flex:1;min-width:0}
   .fld{margin-bottom:11px}
+  .autohint{display:inline-block;margin-left:6px;font-size:11px;font-weight:600;color:var(--muted);background:#EEF1F5;border-radius:4px;padding:1px 6px;vertical-align:middle}
+  .autofld{background:#F2F5F8!important;color:var(--navy);font-weight:700;cursor:default}
   .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.6}
   button{font-family:var(--font);cursor:pointer}
 
@@ -740,7 +742,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09j（写真セクションは全幅で本文の後ろにまとめて配置・列内で分断しない）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09k（利益率・改善率は自動計算のみ・手入力欄を廃止）</div>
   </div>
 
   <!-- EDITOR -->
@@ -759,17 +761,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="grp">
           <div class="gh">物件・工期・出来高 <span class="carrytag">自動引き継ぎ</span></div>
           <div class="fld"><label>物件名</label><input id="fName" placeholder=""></div>
-          <div class="fld"><label>請負金額（円）</label><input id="fContract" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
-          <div class="fld"><label>増減金額（請負金額の増減・円／減額は先頭に −）</label><input id="fZougen" type="text" inputmode="text" placeholder="例：3000000 または −2000000（減額）" oninput="this.value=fmtMoney(this.value)"></div>
+          <div class="fld"><label>請負金額（円）</label><input id="fContract" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value);updateAutoRates()"></div>
+          <div class="fld"><label>増減金額（請負金額の増減・円／減額は先頭に −）</label><input id="fZougen" type="text" inputmode="text" placeholder="例：3000000 または −2000000（減額）" oninput="this.value=fmtMoney(this.value);updateAutoRates()"></div>
           <div class="row fld">
-            <div><label>実行予算01（円）</label><input id="fBudget01" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
-            <div><label>実行予算02 現在（円）</label><input id="fBudget02" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
+            <div><label>実行予算01（円）</label><input id="fBudget01" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value);updateAutoRates()"></div>
+            <div><label>実行予算02 現在（円）</label><input id="fBudget02" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value);updateAutoRates()"></div>
           </div>
           <div class="fld"><label>工期</label><div class="row"><input id="fKokiStart" type="date"><input id="fKokiEnd" type="date"></div></div>
           <div class="fld"><label>出来高（％）</label><input id="fDeki" type="number" inputmode="decimal" min="0" max="100" placeholder="65"></div>
           <div class="row fld">
-            <div><label>利益率（％）</label><input id="fRiritsu" type="text" inputmode="decimal" placeholder="空欄で自動計算"></div>
-            <div><label>改善率（％）</label><input id="fKaizen" type="text" inputmode="decimal" placeholder="空欄で自動計算"></div>
+            <div><label>利益率（％）<span class="autohint">自動計算</span></label><input id="fRiritsu" type="text" class="autofld" readonly tabindex="-1" placeholder="—"></div>
+            <div><label>改善率（％）<span class="autohint">自動計算</span></label><input id="fKaizen" type="text" class="autofld" readonly tabindex="-1" placeholder="—"></div>
           </div>
           <div class="fld"><label>担当者</label><input id="fTanto" placeholder="氏名"></div>
         </div>
@@ -1293,8 +1295,9 @@ function prevStep(){persist();if(step>0){step--;showStep();}else go("home");}
 
 function loadEditor(){
   const c=cur;
-  setV("fName",c.name);setV("fKokiStart",c.kokiStart);setV("fKokiEnd",c.kokiEnd);setV("fDeki",c.deki);setV("fRiritsu",c.riritsu);setV("fTanto",c.tanto);
-  setV("fContract",fmtMoney(c.contract));setV("fBudget01",fmtMoney(c.budget01));setV("fBudget02",fmtMoney(c.budget02));setV("fZougen",fmtMoney(c.zougen));setV("fKaizen",c.kaizen||"");
+  setV("fName",c.name);setV("fKokiStart",c.kokiStart);setV("fKokiEnd",c.kokiEnd);setV("fDeki",c.deki);setV("fTanto",c.tanto);
+  setV("fContract",fmtMoney(c.contract));setV("fBudget01",fmtMoney(c.budget01));setV("fBudget02",fmtMoney(c.budget02));setV("fZougen",fmtMoney(c.zougen));
+  updateAutoRates();   // 利益率・改善率は自動計算（表示のみ）
   setV("fReport",c.report);setV("fKenan",c.kenan);setV("fIssue",c.issue);
   if(!Array.isArray(c.tsThisList))c.tsThisList=(c.tsThis||"").trim()?c.tsThis.split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean):[];
   if(!Array.isArray(c.tsNextList))c.tsNextList=(c.tsNext||"").trim()?c.tsNext.split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean):[];
@@ -1457,11 +1460,22 @@ function toggleMic(){
 function insertText(el,t){if(!el)return;const s=el.selectionStart??el.value.length,e=el.selectionEnd??el.value.length;
   el.value=el.value.slice(0,s)+t+el.value.slice(e);el.dispatchEvent(new Event("input",{bubbles:true}));el.focus();ag(el);}
 
+// 利益率・改善率の自動計算（表示専用フィールドへ反映）
+//  変更後請負金額＝請負金額＋増減金額。利益率＝(変更後請負金額−実行予算02)/変更後請負金額×100。改善率＝(実行予算01−実行予算02)/変更後請負金額×100
+function updateAutoRates(){
+  const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};
+  const C=num(val("fContract")),Z=num(val("fZougen")),B1=num(val("fBudget01")),B2=num(val("fBudget02"));
+  const adj=(isFinite(C)?C:0)+(isFinite(Z)?Z:0);const hasAdj=isFinite(C)&&adj>0;
+  const r=document.getElementById("fRiritsu"),k=document.getElementById("fKaizen");
+  if(r)r.value=(hasAdj&&isFinite(B2))?((adj-B2)/adj*100).toFixed(1):"";
+  if(k){if(hasAdj&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/adj*100;k.value=(kz>=0?"+":"")+kz.toFixed(1);}else k.value="";}
+}
 function collect(){
   const c=cur;c.mode=curMode;
   if(curMode==="genba"){
-    c.name=val("fName").trim();c.kokiStart=val("fKokiStart");c.kokiEnd=val("fKokiEnd");c.deki=val("fDeki");c.riritsu=val("fRiritsu");c.kaizen=val("fKaizen").trim();
+    c.name=val("fName").trim();c.kokiStart=val("fKokiStart");c.kokiEnd=val("fKokiEnd");c.deki=val("fDeki");
     c.contract=moneyDigits(val("fContract"));c.budget01=moneyDigits(val("fBudget01"));c.budget02=moneyDigits(val("fBudget02"));c.zougen=moneyDigits(val("fZougen"));
+    updateAutoRates();c.riritsu=val("fRiritsu");c.kaizen=val("fKaizen").trim();   // 利益率・改善率は自動計算値を保存（手入力不可）
     c.date=todayISO();c.tanto=val("fTanto");c.report=val("fReport");c.kenan=val("fKenan");c.issue=val("fIssue");
   }else{c.name="TAIYOSHEET 週報";c.date=todayISO();c.tanto="";
     c.tsName=val("tsName").trim();if(c.tsName)localStorage.setItem("reporterName",c.tsName);
