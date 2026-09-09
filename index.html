@@ -138,9 +138,9 @@
   .chk .paygridE .cdate{width:100%;flex:none}
   .pdfmode .paygrid{display:grid;grid-template-columns:auto auto auto auto auto;justify-content:start;column-gap:6px;row-gap:6px;align-items:center;font-size:15px}
   .pdfmode .paygrid .pn{white-space:nowrap;margin-right:6px}
-  .pdfmode .paygrid .pd{white-space:nowrap;text-align:right}
+  .pdfmode .paygrid .pd{white-space:nowrap;text-align:left;justify-self:start}
   .pdfmode .paygrid .pm{width:1.15em;text-align:center}
-  .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:right}
+  .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:left;justify-self:start}
   .pdfmode .moneygrid{display:grid;grid-template-columns:max-content 1fr;row-gap:5px;column-gap:18px;align-items:baseline;font-size:15px}
   .pdfmode .moneygrid .mgl{white-space:nowrap}
   .pdfmode .moneygrid .mgv{text-align:left;font-weight:700;white-space:nowrap}   /* ラベル列を最長に合わせて詰め、金額(¥)の開始位置をそろえる */
@@ -742,7 +742,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09k（利益率・改善率は自動計算のみ・手入力欄を廃止）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09l（請求入金：請求日・入金日の見出しを日付の上に／日付を左そろえで縦一列に）</div>
   </div>
 
   <!-- EDITOR -->
