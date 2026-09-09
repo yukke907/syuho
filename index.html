@@ -737,7 +737,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09f（請求入金の入力：請求行と入金行の列をそろえて表示）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09g（利益率も自動計算：再集計後金額(請負+増減)と実行予算02から算出・改善率も同基準に）</div>
   </div>
 
   <!-- EDITOR -->
@@ -765,7 +765,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <div class="fld"><label>工期</label><div class="row"><input id="fKokiStart" type="date"><input id="fKokiEnd" type="date"></div></div>
           <div class="fld"><label>出来高（％）</label><input id="fDeki" type="number" inputmode="decimal" min="0" max="100" placeholder="65"></div>
           <div class="row fld">
-            <div><label>利益率（％）</label><input id="fRiritsu" type="number" inputmode="decimal" placeholder=""></div>
+            <div><label>利益率（％）</label><input id="fRiritsu" type="text" inputmode="decimal" placeholder="空欄で自動計算"></div>
             <div><label>改善率（％）</label><input id="fKaizen" type="text" inputmode="decimal" placeholder="空欄で自動計算"></div>
           </div>
           <div class="fld"><label>担当者</label><input id="fTanto" placeholder="氏名"></div>
@@ -1467,12 +1467,23 @@ function buildSheetHTML(c){
   let body="",head,metaHtml;
   if(c.mode==="genba"){
     const chip=(l,v)=>`<span class="mchip"><span class="ml">${l}</span><b class="mv">${v}</b></span>`;
-    const mp=[];if(c.kokiStart||c.kokiEnd)mp.push(chip("工期",`${fmtD(c.kokiStart)||"…"} ～ ${fmtD(c.kokiEnd)||"…"}`));if(c.deki!=="")mp.push(chip("出来高",`${c.deki}%`));if((c.riritsu+"").trim())mp.push(chip("利益率",`${c.riritsu}%`));
-    // 改善率：手入力があればそれを表示。空欄なら (実行予算01−実行予算02)÷請負金額×100 を自動計算（利益率の改善ポイント）
-    {const man=(c.kaizen+"").trim();if(man!==""){mp.push(chip("改善率",man.replace(/%$/,"")+"%"));}else{const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};const C=num(c.contract),B1=num(c.budget01),B2=num(c.budget02);if(isFinite(C)&&C>0&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/C*100;mp.push(chip("改善率",(kz>=0?"+":"")+kz.toFixed(1)+"%"));}}}
+    const mp=[];if(c.kokiStart||c.kokiEnd)mp.push(chip("工期",`${fmtD(c.kokiStart)||"…"} ～ ${fmtD(c.kokiEnd)||"…"}`));if(c.deki!=="")mp.push(chip("出来高",`${c.deki}%`));
+    // 利益率・改善率：手入力があればそれを表示。空欄なら自動計算。
+    //  再集計後金額＝請負金額＋増減金額。利益率＝(再集計後金額−実行予算02)/再集計後金額×100。改善率＝(実行予算01−実行予算02)/再集計後金額×100（利益率の改善ポイント）
+    {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};
+     const C=num(c.contract),Z=num(c.zougen),B1=num(c.budget01),B2=num(c.budget02);
+     const adj=(isFinite(C)?C:0)+(isFinite(Z)?Z:0);const hasAdj=isFinite(C)&&adj>0;
+     const rMan=(c.riritsu+"").trim();
+     if(rMan!==""){mp.push(chip("利益率",rMan.replace(/%$/,"")+"%"));}
+     else if(hasAdj&&isFinite(B2)){mp.push(chip("利益率",((adj-B2)/adj*100).toFixed(1)+"%"));}
+     const kMan=(c.kaizen+"").trim();
+     if(kMan!==""){mp.push(chip("改善率",kMan.replace(/%$/,"")+"%"));}
+     else if(hasAdj&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/adj*100;mp.push(chip("改善率",(kz>=0?"+":"")+kz.toFixed(1)+"%"));}}
     const sb=[];if(c.date)sb.push(chip("報告日",fmtD(c.date)));if(c.tanto)sb.push(chip("担当",esc(c.tanto)));
     metaHtml=[mp.join(""),sb.join("")].filter(Boolean).join("<br>")||"　";
-    const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.zougen+"").trim())mo.push(`<div class="cl2">増減金額　<b>${yen(c.zougen)}</b></div>`);if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);
+    const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.zougen+"").trim())mo.push(`<div class="cl2">増減金額　<b>${yen(c.zougen)}</b></div>`);
+    {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};const C=num(c.contract),Z=num(c.zougen);if(isFinite(C)&&(c.zougen+"").trim()!==""&&isFinite(Z))mo.push(`<div class="cl2">再集計後金額　<b>${yen(C+Z)}</b></div>`);}
+    if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);
     if(mo.length)body+=sec("金額",mo.join(""));
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
