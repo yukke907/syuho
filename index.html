@@ -749,7 +749,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09o（TAIYOSHEET部PDFが「作成中」で止まる不具合を修正）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09p（スマホPDF：先に生成→共有シート／同タブ表示に変更し「作成中」停止を解消）</div>
   </div>
 
   <!-- EDITOR -->
@@ -900,7 +900,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <div id="preview" style="display:none">
     <div class="pad"><div id="sheet"></div></div>
     <div class="pad pv-actions">
-      <div class="hint">下の「PDFで共有」を押すと、きれいなPDF（日付・URLなし）が開きます。スマホはPDF画面の共有ボタン（□↑）から「LINE WORKS」を選ぶと送れます。パソコンは自動でダウンロードされます。</div>
+      <div class="hint">下の「PDFで共有」を押すと、きれいなPDF（日付・URLなし）ができます。スマホは共有メニューが出たら「LINE WORKS」を選んで送れます（メニューが出ない機種はPDF画面の共有ボタン□↑から送れます）。パソコンは自動でダウンロードされます。</div>
     </div>
   </div>
 </div>
@@ -1605,24 +1605,37 @@ function sharePDF(){
   // PDFを出しても「提出済」にはしない（下書きのまま）。提出済への切替は「提出済にする」ボタンで行う
   const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   if(isMobile){
-    // スマホ：印刷（ヘッダー/フッターが付く）を使わず、アプリ製のきれいなPDFを新しいタブで開く。
-    // そのPDF画面の共有ボタンからLINE WORKSへ送れる（＝印刷の日付/URLが付かない）。
-    const w=window.open("","_blank");   // タップ中に同期で開く（ポップアップブロック回避）
-    if(w){try{w.document.write('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+(cur?esc(pdfBaseName(cur)):"週報")+'</title><body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#334;font-size:16px">PDFを作成中です…</body>');}catch(e){}}
+    // スマホ：先にPDFを生成してから開く／共有する。
+    //  以前は先に新しいタブを開いていたが、タブが前面に出るとこのアプリ画面が裏に回り、
+    //  生成処理(requestAnimationFrame等)が一時停止して「作成中」で止まることがあったため、
+    //  生成を前面で完了させてから提示する方式にした。
     const btn=document.querySelector("#fabPreview .btn.go");const o=btn?btn.textContent:"";if(btn){btn.disabled=true;btn.textContent="PDF作成中…";}
-    buildReportPDFBlob().then(blob=>{
+    const TIMEOUT=45000;   // 万一固まっても必ず復帰する安全網
+    Promise.race([buildReportPDFBlob(),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),TIMEOUT))]).then(blob=>{
       if(btn){btn.disabled=false;btn.textContent=o;}
-      if(!blob){if(w)try{w.close();}catch(e){}return;}
+      if(!blob)return;
       window.__lastPDF={blob};
-      const url=URL.createObjectURL(blob);
-      if(w){try{w.location=url;}catch(e){location.href=url;}}else{location.href=url;}   // 開けなかった時は同じ画面でPDF表示
-      setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},120000);
-    }).catch(()=>{   // 予期せぬ失敗でも「作成中」で止めない：ボタンを戻し、作成中タブを閉じる
+      const fname=(cur?pdfBaseName(cur):"週報")+".pdf";
+      // まず端末の共有シート（LINE WORKS等へ直接送れる）を試す
+      try{
+        const file=new File([blob],fname,{type:"application/pdf"});
+        if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
+          navigator.share({files:[file],title:fname}).catch(err=>{if(err&&err.name==="AbortError")return;openPdfBlob(blob);});
+          return;
+        }
+      }catch(e){}
+      openPdfBlob(blob);   // 共有が使えない端末は同じタブでPDFを表示（そこの共有ボタンから送れる）
+    }).catch(()=>{
       if(btn){btn.disabled=false;btn.textContent=o;}
-      if(w){try{w.close();}catch(e){}}
-      alert("PDF作成に失敗しました。もう一度お試しください。");
+      alert("PDFを作成できませんでした。お手数ですが、画面を開き直してもう一度お試しください。");
     });
   }else{savePDFdesktop();}        // パソコン：日本語ファイル名で保存（対応ブラウザは保存ダイアログ、非対応は英字名でダウンロード）
+}
+// スマホ：新しいタブを開かず、同じタブでPDFを表示する（裏回りによる生成停止を避ける）。PDF画面の共有ボタンからLINE WORKSへ送れる。
+function openPdfBlob(blob){
+  const url=URL.createObjectURL(blob);
+  try{location.href=url;}catch(e){try{window.open(url,"_blank");}catch(e2){}}
+  setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},120000);
 }
 async function ensureLibs(){
   // html2canvas / jsPDF はファイル内に同梱済みのため、ネット接続なしでも利用できる（読み込み確認のみ）
