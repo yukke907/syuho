@@ -740,7 +740,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09i（請求入金の＋追加を自動採番＋日付欄／金額はラベルを詰めて¥位置をそろえる）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09j（写真セクションは全幅で本文の後ろにまとめて配置・列内で分断しない）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1153,8 +1153,10 @@ function planPages(el){
   const onecol=!!(bodyEl&&bodyEl.classList.contains("onecol"));
   const cols=onecol?1:2;
   const rel=n=>{const r=n.getBoundingClientRect();return {t:r.top-trect.top,b:r.bottom-trect.top,l:r.left-trect.left,w:r.width,cx:(r.left+r.right)/2-trect.left};};
+  const photosec=el.querySelector(".photosec");   // 写真セクションは列流し込みせず、全幅で最後にまとめて配置する
   const units=[];
   [...el.querySelectorAll(".sec2 h4,.cl2,.dl2,.bl2,.grp-blk,.sec2 p,figure")].forEach(n=>{
+    if(photosec&&photosec.contains(n))return;   // 写真セクション内(見出し・figure)は別処理
     if(n.matches(".cl2,.dl2,.bl2")&&n.closest(".grp-blk"))return;
     const r=rel(n);if(r.b<=r.t+1)return;
     const u={t:r.t,b:r.b,l:r.l,w:r.w,cx:r.cx,head:n.matches("h4")};
@@ -1218,12 +1220,45 @@ function planPages(el){
       it.forEach(o=>{const h=o.sB-o.sT;if(cc===0&&yy>0&&yy>=target){cc=1;yy=0;}o.col=cc;o.py=yy+(yy>0?itemGap:0);yy=o.py+h;});
     }
   }
+  // 写真セクション：全幅ブロックとして本文の後ろにまとめて配置（列内で分割・分断しない）
+  if(photosec){
+    const pr=rel(photosec);
+    const figs=[...photosec.querySelectorAll("figure")].map(f=>rel(f)).filter(r=>r.b>r.t+1);
+    const bands=[];
+    if(figs.length){
+      const firstTop=Math.min.apply(null,figs.map(r=>r.t));
+      bands.push({t:pr.t,b:firstTop,head:true});   // 「写真」見出し＋上余白
+      const rows=[];
+      figs.slice().sort((a,b)=>a.t-b.t).forEach(r=>{
+        const last=rows[rows.length-1];
+        if(last&&r.t<last.b-4){last.t=Math.min(last.t,r.t);last.b=Math.max(last.b,r.b);}
+        else rows.push({t:r.t,b:r.b});
+      });
+      rows.forEach(rw=>bands.push({t:rw.t,b:rw.b}));
+    }else{
+      bands.push({t:pr.t,b:pr.b,head:true});
+    }
+    let pg=store.length?store.length-1:0;
+    const colBottomOf=p=>{const a=store[p]||[];let mb=0;a.forEach(o=>{mb=Math.max(mb,(o.py||0)+(o.sB-o.sT));});return mb;};
+    let yy=store.length?colBottomOf(pg):0;
+    bands.forEach(band=>{
+      const bh=band.b-band.t;if(bh<=1)return;
+      const gap=(yy>0)?(band.head?secGap:itemGap):0;
+      if(yy>0&&(yy+gap+bh)>capOf(pg)){pg++;yy=0;}
+      const py=yy+((yy>0)?(band.head?secGap:itemGap):0);
+      put(pg,{full:true,sX:pr.l,sW:pr.w,sT:band.t,sB:band.b,py});
+      yy=py+bh;
+    });
+  }
   const pages=[];
   for(let pg=0;pg<store.length;pg++){
     const arr=store[pg]||[],ops=[];
     if(pg===0)ops.push({sx:0,sw:W,t:0,b:headerH,dx:0,dy:0});
     const off=topOff(pg);
-    arr.forEach(o=>{ops.push({sx:o.sX,sw:colW,t:o.sT,b:o.sB,dx:(o.col===0?leftX:rightX),dy:off+o.py,col:true});});
+    arr.forEach(o=>{
+      if(o.full)ops.push({sx:o.sX,sw:o.sW,t:o.sT,b:o.sB,dx:o.sX,dy:off+o.py});
+      else ops.push({sx:o.sX,sw:colW,t:o.sT,b:o.sB,dx:(o.col===0?leftX:rightX),dy:off+o.py,col:true});
+    });
     if(ops.length)pages.push(ops);
   }
   if(!pages.length)pages.push([{sx:0,sw:W,t:0,b:H,dx:0,dy:0}]);
