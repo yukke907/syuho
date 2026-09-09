@@ -128,6 +128,12 @@
   .chk .cname{flex:1;min-width:0;min-height:36px}
   .chk2{flex-wrap:wrap;overflow:visible}
   .chk .cdlbl{font-size:11px;color:var(--muted);font-weight:700;align-self:center;margin-left:2px}
+  .chk .nyuck{width:20px;height:20px;flex:0 0 auto;margin-left:4px}
+  .pdfmode .paygrid{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;column-gap:8px;row-gap:5px;align-items:center;font-size:15px}
+  .pdfmode .paygrid .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pdfmode .paygrid .pd{white-space:nowrap;text-align:right}
+  .pdfmode .paygrid .pm{width:1.15em;text-align:center}
+  .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:right}
   .chk .cdel{flex:0 0 38px;min-height:36px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
   .chkadd{width:100%;min-height:44px;margin-top:8px;background:#fff;border:1.5px dashed var(--navy);color:var(--navy);border-radius:8px;font-weight:700;font-size:14.5px}
   .tsrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px}
@@ -726,7 +732,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09b（工事部：増減金額を請負金額の下に・「入金」→「請求入金」・仮保存ボタン追加）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09c（請求入金：入金チェックを追加・請求日/入金日を縦にそろえて表示）</div>
   </div>
 
   <!-- EDITOR -->
@@ -948,7 +954,7 @@ const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"
 const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
 const setV=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||"";};
 const blankDays=()=>DAYS.map((d,i)=>({d,text:"",off:i===0}));
-const defChecks=()=>CHECK_DEF.map(p=>({phase:p.phase,hasDate:p.hasDate,addLabel:p.addLabel||"",items:p.items.map(a=>({name:a[0],note:a[1],date:"",done:false,custom:false}))}));
+const defChecks=()=>CHECK_DEF.map(p=>({phase:p.phase,hasDate:p.hasDate,addLabel:p.addLabel||"",items:p.items.map(a=>({name:a[0],note:a[1],date:"",date2:"",done:false,done2:false,custom:false}))}));
 function ag(el){if(!el)return;el.style.height="auto";el.style.height=(el.scrollHeight+2)+"px";}
 let __saveTO=null;
 function scheduleSave(){if(__saveTO)clearTimeout(__saveTO);__saveTO=setTimeout(doAutoSave,700);}
@@ -1019,7 +1025,7 @@ function seedFromPrev(p,prev){
   if(prev){
     r.kokiStart=prev.kokiStart;r.kokiEnd=prev.kokiEnd;r.tanto=prev.tanto;r.deki=prev.deki;r.riritsu=prev.riritsu;r.kenan=prev.kenan;
     r.contract=prev.contract||"";r.budget01=prev.budget01||"";r.budget02=prev.budget02||"";r.zougen=prev.zougen||"";
-    if(prev.checks&&prev.checks.length)r.checks=prev.checks.map(ph=>({phase:ph.phase,hasDate:ph.hasDate,addLabel:ph.addLabel||"",items:ph.items.map(i=>({name:i.name,note:i.note,date:i.date||"",date2:i.date2||"",done:i.done,custom:!!i.custom}))}));
+    if(prev.checks&&prev.checks.length)r.checks=prev.checks.map(ph=>({phase:ph.phase,hasDate:ph.hasDate,addLabel:ph.addLabel||"",items:ph.items.map(i=>({name:i.name,note:i.note,date:i.date||"",date2:i.date2||"",done:i.done,done2:!!i.done2,custom:!!i.custom}))}));
     r.miles=(prev.miles||[]).map(m=>({date:m.date,text:m.text}));
     r.thisDays=(prev.nextDays||blankDays()).map(d=>({d:d.d,text:d.off?"":d.text,off:d.off}));
     r.props=(prev.props||[]).map(x=>({name:x.name,status:x.status||""}));
@@ -1290,7 +1296,7 @@ function renderChecks(){
         : `<label class="body" for="ck_${pi}_${ii}"><span class="cn">${esc(it.name)}</span>${it.note?`<span class="cnote">${esc(it.note)}</span>`:""}</label>`;
       const isNyu=ph.addLabel==="請求";   // 入金フェーズは「請求日」＋「入金日」の2つの日付
       const dateHtml=ph.hasDate?`<span class="cdlbl">${isNyu?"請求":""}</span><input type="date" class="cdate" value="${it.date||""}" title="${isNyu?"請求日":"日付"}" onchange="cur.checks[${pi}].items[${ii}].date=this.value">`:"";
-      const date2Html=isNyu?`<span class="cdlbl">入金</span><input type="date" class="cdate" value="${it.date2||""}" title="入金日" onchange="cur.checks[${pi}].items[${ii}].date2=this.value">`:"";
+      const date2Html=isNyu?`<input type="checkbox" class="nyuck" ${it.done2?"checked":""} title="入金済" onchange="cur.checks[${pi}].items[${ii}].done2=this.checked;renderChecks()"><span class="cdlbl">入金</span><input type="date" class="cdate" value="${it.date2||""}" title="入金日" onchange="cur.checks[${pi}].items[${ii}].date2=this.value">`:"";
       const delHtml=it.custom?`<button class="cdel" onclick="delCheckItem(${pi},${ii})" aria-label="削除">✕</button>`:"";
       return `<div class="chk ${it.done?"on":""}${isNyu?" chk2":""}">
         <input type="checkbox" id="ck_${pi}_${ii}" ${it.done?"checked":""} onchange="cur.checks[${pi}].items[${ii}].done=this.checked;renderChecks()">
@@ -1302,7 +1308,7 @@ function renderChecks(){
 }
 function addCheckItem(pi){const ph=cur.checks[pi];let name="";
   if(ph.addLabel==="請求"){name=`請求${ph.items.length+1}回目`;}
-  ph.items.push({name,note:"",date:"",date2:"",done:false,custom:true});renderChecks();}
+  ph.items.push({name,note:"",date:"",date2:"",done:false,done2:false,custom:true});renderChecks();}
 function delCheckItem(pi,ii){cur.checks[pi].items.splice(ii,1);renderChecks();}
 
 function renderMiles(){
@@ -1460,7 +1466,11 @@ function buildSheetHTML(c){
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
     if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`);
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
-    if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const isNyu=ph.addLabel==="請求";const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';let dh;if(isNyu){dh=`${i.date?`　請求 <b class="dt">${fmtDW(i.date)}</b>`:""}${i.date2?`　入金 <b class="dt">${fmtDW(i.date2)}</b>`:`　入金 <b class="dt" style="color:#B9C0C6">未</b>`}`;}else{dh=i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:"";}return `<div class="cl2">${mark} ${esc(i.name)}${dh}</div>`;}).join("");return `<div class="grp-blk"><div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
+    if(c.checks&&c.checks.length){const dot=v=>v?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const isNyu=ph.addLabel==="請求";const head=`<div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>`;
+      if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';return `<span class="pm">${dot(i.done)}</span><span class="pn">${esc(i.name)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`;}).join("");
+        return `<div class="grp-blk">${head}<div class="paygrid"><span></span><span></span><span class="ph2">請求日</span><span></span><span class="ph2">入金日</span>${cells}</div></div>`;}
+      const items=ph.items.map(i=>{const dh=i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:"";return `<div class="cl2">${dot(i.done)} ${esc(i.name)}${dh}</div>`;}).join("");
+      return `<div class="grp-blk">${head}${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
     // 末尾セクション（今後の重要な予定・懸案事項・クレーム）は赤い見出し下線で区別しつつ、他と同じく2列に流し込む
     if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""),"tailsec");
@@ -1644,7 +1654,7 @@ document.addEventListener("input",e=>{if(e.target&&e.target.tagName==="TEXTAREA"
 ["input","change","click"].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest("#editor"))scheduleLive();}));
 function normalizeState(){
   const def={};CHECK_DEF.forEach(p=>def[p.phase]={hasDate:p.hasDate,addLabel:p.addLabel||""});
-  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(ph.phase==="入金")ph.phase="請求入金";if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";});});});
+  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(ph.phase==="入金")ph.phase="請求入金";if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";if(i.done2===undefined)i.done2=false;});});});
 }
 // 画面幅が変わったら（PC⇔スマホ表示の切替・回転）編集画面を作り直す（入力内容は保持）
 window.matchMedia("(min-width:900px)").addEventListener("change",()=>{
