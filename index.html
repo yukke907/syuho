@@ -128,10 +128,12 @@
   .chk .cname{flex:1;min-width:0;min-height:36px}
   .chk2{flex-wrap:wrap;overflow:visible}
   .chk .cdlbl{font-size:11px;color:var(--muted);font-weight:700;align-self:center;margin-left:2px}
+  .chk.payrow{align-items:center;flex-wrap:nowrap}
   .chk .paynm{font-weight:700;flex:0 0 auto;min-width:3em;align-self:center}
-  .chk .paychk{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto}
-  .chk .paychk input[type=checkbox]{width:22px;height:22px}
-  .chk .payseg{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto}
+  .chk .paygridE{display:grid;grid-template-columns:auto auto minmax(120px,1fr);gap:8px 8px;align-items:center;flex:1 1 auto;min-width:0}
+  .chk .paygridE input[type=checkbox]{width:22px;height:22px;margin:0}
+  .chk .paygridE .cdlbl{margin:0}
+  .chk .paygridE .cdate{width:100%;flex:none}
   .pdfmode .paygrid{display:grid;grid-template-columns:auto auto auto auto auto;justify-content:start;column-gap:6px;row-gap:6px;align-items:center;font-size:15px}
   .pdfmode .paygrid .pn{white-space:nowrap;margin-right:6px}
   .pdfmode .paygrid .pd{white-space:nowrap;text-align:right}
@@ -735,7 +737,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09e（増減金額にマイナス可・改善率の入力欄・請求入金の入力を「1回目 □請求 □入金」に）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09f（請求入金の入力：請求行と入金行の列をそろえて表示）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1301,8 +1303,8 @@ function renderChecks(){
         const nm=it.custom
           ? `<input class="cname paynm" value="${esc(it.name)}" placeholder="回数" oninput="cur.checks[${pi}].items[${ii}].name=this.value">`
           : `<span class="paynm">${esc(it.name)}</span>`;
-        const seg=(dk,ck,lbl)=>`<span class="payseg"><label class="paychk"><input type="checkbox" ${it[ck]?"checked":""} title="${lbl}済" onchange="cur.checks[${pi}].items[${ii}].${ck}=this.checked;renderChecks()"><span class="cdlbl">${lbl}</span></label><input type="date" class="cdate" value="${it[dk]||""}" onchange="cur.checks[${pi}].items[${ii}].${dk}=this.value"></span>`;
-        return `<div class="chk chk2">${nm}${seg("date","done","請求")}${seg("date2","done2","入金")}${delHtml}</div>`;
+        const line=(dk,ck,lbl)=>`<input type="checkbox" ${it[ck]?"checked":""} title="${lbl}済" onchange="cur.checks[${pi}].items[${ii}].${ck}=this.checked;renderChecks()"><span class="cdlbl">${lbl}</span><input type="date" class="cdate" value="${it[dk]||""}" onchange="cur.checks[${pi}].items[${ii}].${dk}=this.value">`;
+        return `<div class="chk chk2 payrow">${nm}<div class="paygridE">${line("date","done","請求")}${line("date2","done2","入金")}</div>${delHtml}</div>`;
       }
       const nameHtml=it.custom
         ? `<input class="cname" value="${esc(it.name)}" placeholder="項目名" oninput="cur.checks[${pi}].items[${ii}].name=this.value">`
