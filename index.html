@@ -201,6 +201,11 @@
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
   .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
   .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
+  .cklist{display:grid;grid-template-columns:max-content max-content auto;column-gap:8px;row-gap:2px;align-items:baseline;font-size:14px;justify-content:start}
+  .cklist>span{white-space:nowrap}
+  .cklist .ck-nm{color:var(--navy)}
+  .cklist .ck-dt{font-family:var(--mono);color:var(--navy);justify-self:start}
+  .cklist .ok{color:var(--green)}
   .bl2{font-size:14px;padding:3px 0;line-height:1.6;padding-left:1.1em;text-indent:-1.1em}
   .phh{margin:11px 0 6px}
   .phhu{display:inline-block;font-weight:700;font-size:14px;color:var(--navy);border-bottom:2px solid var(--orange);padding-bottom:2px}
@@ -235,6 +240,7 @@
   .pdfmode .sec2 p{font-size:15px;line-height:1.8}
   .pdfmode .dl2{font-size:15px;padding:2px 0}.pdfmode .dl2 b{min-width:3.4em}
   .pdfmode .cl2{font-size:15px;padding:2px 0}
+  .pdfmode .cklist{font-size:15px;row-gap:3px}
   .pdfmode .bl2{font-size:15px;padding:4px 0;line-height:1.7}
   .pdfmode .cl2,.pdfmode .dl2,.pdfmode .bl2{break-inside:avoid;-webkit-column-break-inside:avoid}
   .pdfmode .sheet-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-items:start}
@@ -742,7 +748,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09l（請求入金：請求日・入金日の見出しを日付の上に／日付を左そろえで縦一列に）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09m（チェックリストの日付を独立列にして縦にそろえる）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1543,7 +1549,10 @@ function buildSheetHTML(c){
     if(c.checks&&c.checks.length){const dot=v=>v?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const isNyu=ph.addLabel==="請求";const head=`<div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>`;
       if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';return `<span class="pn">${esc(i.name)}</span><span class="pm">${dot(i.done)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`;}).join("");
         return `<div class="grp-blk">${head}<div class="paygrid"><span></span><span></span><span class="ph2">請求日</span><span></span><span class="ph2">入金日</span>${cells}</div></div>`;}
-      const items=ph.items.map(i=>{const dh=i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:"";return `<div class="cl2">${dot(i.done)} ${esc(i.name)}${dh}</div>`;}).join("");
+      const anyDate=ph.items.some(i=>i.date);
+      if(anyDate){const cells=ph.items.map(i=>{const dh=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:"";return `<span class="ck-dot">${dot(i.done)}</span><span class="ck-nm">${esc(i.name)}</span><span class="ck-dt">${dh}</span>`;}).join("");
+        return `<div class="grp-blk">${head}<div class="cklist">${cells}</div></div>`;}
+      const items=ph.items.map(i=>{return `<div class="cl2">${dot(i.done)} ${esc(i.name)}</div>`;}).join("");
       return `<div class="grp-blk">${head}${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
     // 末尾セクション（今後の重要な予定・懸案事項・クレーム）は赤い見出し下線で区別しつつ、他と同じく2列に流し込む
