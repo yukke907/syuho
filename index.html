@@ -139,9 +139,9 @@
   .pdfmode .paygrid .pd{white-space:nowrap;text-align:right}
   .pdfmode .paygrid .pm{width:1.15em;text-align:center}
   .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:right}
-  .pdfmode .moneygrid{display:grid;grid-template-columns:auto 1fr;row-gap:5px;column-gap:14px;align-items:baseline;font-size:15px}
+  .pdfmode .moneygrid{display:grid;grid-template-columns:max-content 1fr;row-gap:5px;column-gap:18px;align-items:baseline;font-size:15px}
   .pdfmode .moneygrid .mgl{white-space:nowrap}
-  .pdfmode .moneygrid .mgv{text-align:right;font-weight:700;white-space:nowrap}
+  .pdfmode .moneygrid .mgv{text-align:left;font-weight:700;white-space:nowrap}   /* ラベル列を最長に合わせて詰め、金額(¥)の開始位置をそろえる */
   .chk .cdel{flex:0 0 38px;min-height:36px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
   .chkadd{width:100%;min-height:44px;margin-top:8px;background:#fff;border:1.5px dashed var(--navy);color:var(--navy);border-radius:8px;font-weight:700;font-size:14.5px}
   .tsrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px}
@@ -740,7 +740,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09h（金額を「変更後請負金額」表記・数字を右そろえで縦一列に・利益率/改善率は自動計算）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09i（請求入金の＋追加を自動採番＋日付欄／金額はラベルを詰めて¥位置をそろえる）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1303,9 +1303,7 @@ function renderChecks(){
     const rows=ph.items.map((it,ii)=>{
       const delHtml=it.custom?`<button class="cdel" onclick="delCheckItem(${pi},${ii})" aria-label="削除">✕</button>`:"";
       if(isNyu){   // 請求入金：「1回目　□請求（日付）　□入金（日付）」の形。チェックは各ラベルの左
-        const nm=it.custom
-          ? `<input class="cname paynm" value="${esc(it.name)}" placeholder="回数" oninput="cur.checks[${pi}].items[${ii}].name=this.value">`
-          : `<span class="paynm">${esc(it.name)}</span>`;
+        const nm=`<span class="paynm">${esc(it.name)}</span>`;   // 請求入金は「N回目」を自動表示（編集不要）。追加すると自動で回数が増える
         const line=(dk,ck,lbl)=>`<input type="checkbox" ${it[ck]?"checked":""} title="${lbl}済" onchange="cur.checks[${pi}].items[${ii}].${ck}=this.checked;renderChecks()"><span class="cdlbl">${lbl}</span><input type="date" class="cdate" value="${it[dk]||""}" onchange="cur.checks[${pi}].items[${ii}].${dk}=this.value">`;
         return `<div class="chk chk2 payrow">${nm}<div class="paygridE">${line("date","done","請求")}${line("date2","done2","入金")}</div>${delHtml}</div>`;
       }
