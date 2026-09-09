@@ -141,9 +141,9 @@
   .pdfmode .paygrid .pd{white-space:nowrap;text-align:left;justify-self:start}
   .pdfmode .paygrid .pm{width:1.15em;text-align:center}
   .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:left;justify-self:start}
-  .pdfmode .moneygrid{display:grid;grid-template-columns:max-content 1fr;row-gap:5px;column-gap:18px;align-items:baseline;font-size:15px}
+  .pdfmode .moneygrid{display:grid;grid-template-columns:max-content max-content;row-gap:5px;column-gap:14px;align-items:baseline;font-size:15px;justify-content:start}
   .pdfmode .moneygrid .mgl{white-space:nowrap}
-  .pdfmode .moneygrid .mgv{text-align:left;font-weight:700;white-space:nowrap}   /* ラベル列を最長に合わせて詰め、金額(¥)の開始位置をそろえる */
+  .pdfmode .moneygrid .mgv{text-align:right;font-weight:700;white-space:nowrap;font-family:var(--mono)}   /* 金額は右そろえで桁（末尾）を縦にそろえる */
   .chk .cdel{flex:0 0 38px;min-height:36px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
   .chkadd{width:100%;min-height:44px;margin-top:8px;background:#fff;border:1.5px dashed var(--navy);color:var(--navy);border-radius:8px;font-weight:700;font-size:14.5px}
   .tsrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px}
@@ -206,6 +206,7 @@
   .cklist .ck-nm{color:var(--navy)}
   .cklist .ck-dt{font-family:var(--mono);color:var(--navy);justify-self:start}
   .cklist .ok{color:var(--green)}
+  .cklist.mlist{grid-template-columns:max-content auto}
   .bl2{font-size:14px;padding:3px 0;line-height:1.6;padding-left:1.1em;text-indent:-1.1em}
   .phh{margin:11px 0 6px}
   .phhu{display:inline-block;font-weight:700;font-size:14px;color:var(--navy);border-bottom:2px solid var(--orange);padding-bottom:2px}
@@ -748,7 +749,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09m（チェックリストの日付を独立列にして縦にそろえる）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09n（金額を右そろえで桁そろえ・「現在」削除／今後の予定の日付も縦そろえ）</div>
   </div>
 
   <!-- EDITOR -->
@@ -771,7 +772,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <div class="fld"><label>増減金額（請負金額の増減・円／減額は先頭に −）</label><input id="fZougen" type="text" inputmode="text" placeholder="例：3000000 または −2000000（減額）" oninput="this.value=fmtMoney(this.value);updateAutoRates()"></div>
           <div class="row fld">
             <div><label>実行予算01（円）</label><input id="fBudget01" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value);updateAutoRates()"></div>
-            <div><label>実行予算02 現在（円）</label><input id="fBudget02" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value);updateAutoRates()"></div>
+            <div><label>実行予算02（円）</label><input id="fBudget02" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value);updateAutoRates()"></div>
           </div>
           <div class="fld"><label>工期</label><div class="row"><input id="fKokiStart" type="date"><input id="fKokiEnd" type="date"></div></div>
           <div class="fld"><label>出来高（％）</label><input id="fDeki" type="number" inputmode="decimal" min="0" max="100" placeholder="65"></div>
@@ -1495,7 +1496,7 @@ function buildText(c){
     L.push(`【週間報告】${c.name||"（物件名未記入）"}`);
     const meta=[];if(c.kokiStart||c.kokiEnd)meta.push(`工期：${fmtD(c.kokiStart)||"…"} ～ ${fmtD(c.kokiEnd)||"…"}`);if(c.deki!=="")meta.push(`出来高：${c.deki}%`);if((c.riritsu+"").trim())meta.push(`利益率：${c.riritsu}%`);
     if(meta.length)L.push(meta.join("　/　"));const sub=[];if(c.date)sub.push(`報告日：${fmtD(c.date)}`);if(c.tanto)sub.push(`担当：${c.tanto}`);if(sub.length)L.push(sub.join("　"));
-    const mo=[];if((c.contract+"").trim())mo.push(`請負金額：${yen(c.contract)}`);if((c.budget01+"").trim())mo.push(`実行予算01：${yen(c.budget01)}`);if((c.budget02+"").trim())mo.push(`実行予算02(現在)：${yen(c.budget02)}`);if(mo.length)L.push(mo.join("　/　"));
+    const mo=[];if((c.contract+"").trim())mo.push(`請負金額：${yen(c.contract)}`);if((c.budget01+"").trim())mo.push(`実行予算01：${yen(c.budget01)}`);if((c.budget02+"").trim())mo.push(`実行予算02：${yen(c.budget02)}`);if(mo.length)L.push(mo.join("　/　"));
     L.push("");
     L.push("■ 今週の実績");c.thisDays.forEach((d,i)=>L.push(`　${dayMD(c.week,0,i)}（${d.d}）：${d.off?"休工日":(d.text.trim()||"―")}`));
     L.push(`■ 工程状況：${c.kotei||"順調"}`);
@@ -1540,7 +1541,7 @@ function buildSheetHTML(c){
     const mrow=(l,v)=>`<span class="mgl">${l}</span><span class="mgv">${v}</span>`;
     const mo=[];if((c.contract+"").trim())mo.push(mrow("請負金額",yen(c.contract)));if((c.zougen+"").trim())mo.push(mrow("増減金額",yen(c.zougen)));
     {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};const C=num(c.contract),Z=num(c.zougen);if(isFinite(C)&&(c.zougen+"").trim()!==""&&isFinite(Z))mo.push(mrow("変更後請負金額",yen(C+Z)));}
-    if((c.budget01+"").trim())mo.push(mrow("実行予算01",yen(c.budget01)));if((c.budget02+"").trim())mo.push(mrow("実行予算02（現在）",yen(c.budget02)));
+    if((c.budget01+"").trim())mo.push(mrow("実行予算01",yen(c.budget01)));if((c.budget02+"").trim())mo.push(mrow("実行予算02",yen(c.budget02)));
     if(mo.length)body+=sec("金額",`<div class="moneygrid">${mo.join("")}</div>`);
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
@@ -1556,7 +1557,7 @@ function buildSheetHTML(c){
       return `<div class="grp-blk">${head}${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
     // 末尾セクション（今後の重要な予定・懸案事項・クレーム）は赤い見出し下線で区別しつつ、他と同じく2列に流し込む
-    if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""),"tailsec");
+    if(ms.length)body+=sec("今後の重要な予定",`<div class="cklist mlist">${ms.map(m=>`<span class="ck-nm">${esc(m.text)}</span><span class="ck-dt">${m.date?fmtDW(m.date):"未定"}</span>`).join("")}</div>`,"tailsec");
     if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"tailsec");
     if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"tailsec");
     head=`週間報告　${esc(c.name)||"（物件名未記入）"}`;
