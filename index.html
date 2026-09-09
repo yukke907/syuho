@@ -139,6 +139,9 @@
   .pdfmode .paygrid .pd{white-space:nowrap;text-align:right}
   .pdfmode .paygrid .pm{width:1.15em;text-align:center}
   .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:right}
+  .pdfmode .moneygrid{display:grid;grid-template-columns:auto 1fr;row-gap:5px;column-gap:14px;align-items:baseline;font-size:15px}
+  .pdfmode .moneygrid .mgl{white-space:nowrap}
+  .pdfmode .moneygrid .mgv{text-align:right;font-weight:700;white-space:nowrap}
   .chk .cdel{flex:0 0 38px;min-height:36px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
   .chkadd{width:100%;min-height:44px;margin-top:8px;background:#fff;border:1.5px dashed var(--navy);color:var(--navy);border-radius:8px;font-weight:700;font-size:14.5px}
   .tsrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px}
@@ -737,7 +740,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09g（利益率も自動計算：再集計後金額(請負+増減)と実行予算02から算出・改善率も同基準に）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09h（金額を「変更後請負金額」表記・数字を右そろえで縦一列に・利益率/改善率は自動計算）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1481,10 +1484,11 @@ function buildSheetHTML(c){
      else if(hasAdj&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/adj*100;mp.push(chip("改善率",(kz>=0?"+":"")+kz.toFixed(1)+"%"));}}
     const sb=[];if(c.date)sb.push(chip("報告日",fmtD(c.date)));if(c.tanto)sb.push(chip("担当",esc(c.tanto)));
     metaHtml=[mp.join(""),sb.join("")].filter(Boolean).join("<br>")||"　";
-    const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.zougen+"").trim())mo.push(`<div class="cl2">増減金額　<b>${yen(c.zougen)}</b></div>`);
-    {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};const C=num(c.contract),Z=num(c.zougen);if(isFinite(C)&&(c.zougen+"").trim()!==""&&isFinite(Z))mo.push(`<div class="cl2">再集計後金額　<b>${yen(C+Z)}</b></div>`);}
-    if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);
-    if(mo.length)body+=sec("金額",mo.join(""));
+    const mrow=(l,v)=>`<span class="mgl">${l}</span><span class="mgv">${v}</span>`;
+    const mo=[];if((c.contract+"").trim())mo.push(mrow("請負金額",yen(c.contract)));if((c.zougen+"").trim())mo.push(mrow("増減金額",yen(c.zougen)));
+    {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};const C=num(c.contract),Z=num(c.zougen);if(isFinite(C)&&(c.zougen+"").trim()!==""&&isFinite(Z))mo.push(mrow("変更後請負金額",yen(C+Z)));}
+    if((c.budget01+"").trim())mo.push(mrow("実行予算01",yen(c.budget01)));if((c.budget02+"").trim())mo.push(mrow("実行予算02（現在）",yen(c.budget02)));
+    if(mo.length)body+=sec("金額",`<div class="moneygrid">${mo.join("")}</div>`);
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
     if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`);
