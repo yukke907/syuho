@@ -129,8 +129,8 @@
   .chk2{flex-wrap:wrap;overflow:visible}
   .chk .cdlbl{font-size:11px;color:var(--muted);font-weight:700;align-self:center;margin-left:2px}
   .chk .nyuck{width:20px;height:20px;flex:0 0 auto;margin-left:4px}
-  .pdfmode .paygrid{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;column-gap:8px;row-gap:5px;align-items:center;font-size:15px}
-  .pdfmode .paygrid .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pdfmode .paygrid{display:grid;grid-template-columns:auto auto auto auto auto;justify-content:start;column-gap:6px;row-gap:6px;align-items:center;font-size:15px}
+  .pdfmode .paygrid .pn{white-space:nowrap;margin-right:6px}
   .pdfmode .paygrid .pd{white-space:nowrap;text-align:right}
   .pdfmode .paygrid .pm{width:1.15em;text-align:center}
   .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:right}
@@ -732,7 +732,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09c（請求入金：入金チェックを追加・請求日/入金日を縦にそろえて表示）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09d（請求入金：●を各日付の直前に・詰めて見やすく・縦そろえ）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1467,7 +1467,7 @@ function buildSheetHTML(c){
     if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`);
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
     if(c.checks&&c.checks.length){const dot=v=>v?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const isNyu=ph.addLabel==="請求";const head=`<div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>`;
-      if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';return `<span class="pm">${dot(i.done)}</span><span class="pn">${esc(i.name)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`;}).join("");
+      if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';return `<span class="pn">${esc(i.name)}</span><span class="pm">${dot(i.done)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`;}).join("");
         return `<div class="grp-blk">${head}<div class="paygrid"><span></span><span></span><span class="ph2">請求日</span><span></span><span class="ph2">入金日</span>${cells}</div></div>`;}
       const items=ph.items.map(i=>{const dh=i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:"";return `<div class="cl2">${dot(i.done)} ${esc(i.name)}${dh}</div>`;}).join("");
       return `<div class="grp-blk">${head}${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
