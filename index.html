@@ -201,7 +201,7 @@
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
   .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
   .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
-  .cklist{display:grid;grid-template-columns:max-content max-content auto;column-gap:4px;row-gap:2px;align-items:baseline;font-size:14px;justify-content:start}
+  .cklist{display:grid;grid-template-columns:max-content var(--nmw,max-content) auto;column-gap:4px;row-gap:2px;align-items:baseline;font-size:14px;justify-content:start}
   .cklist>span{white-space:nowrap}
   .cklist .ck-nm{color:var(--navy)}
   .cklist .ck-dt{font-family:var(--mono);color:var(--navy);justify-self:start}
@@ -751,7 +751,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09r（工種別：日付を左に詰め・開始日に「〜」を付与）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09s（工種別：日付列を「日付のある項目名」幅に合わせて左へ詰める）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1557,8 +1557,11 @@ function buildSheetHTML(c){
       if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';return `<span class="pn">${esc(i.name)}</span><span class="pm">${dot(i.done)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`;}).join("");
         return `<div class="grp-blk">${head}<div class="paygrid"><span></span><span></span><span class="ph2">請求日</span><span></span><span class="ph2">入金日</span>${cells}</div></div>`;}
       const anyDate=ph.items.some(i=>i.date);
-      if(anyDate){const isStart=/開始|日程/.test(ph.phase);const cells=ph.items.map(i=>{const dh=i.date?`<b class="dt">${fmtDW(i.date)}${isStart?"〜":""}</b>`:"";return `<span class="ck-dot">${dot(i.done)}</span><span class="ck-nm">${esc(i.name)}</span><span class="ck-dt">${dh}</span>`;}).join("");
-        return `<div class="grp-blk">${head}<div class="cklist">${cells}</div></div>`;}
+      if(anyDate){const isStart=/開始|日程/.test(ph.phase);
+        const maxLen=ph.items.filter(i=>i.date).reduce((m,i)=>Math.max(m,[...String(i.name||"")].length),0);   // 日付のある項目名の最大文字数に列幅を合わせ、日付を左に詰める
+        const nmw=(maxLen+0.5).toFixed(1)+"em";
+        const cells=ph.items.map(i=>{const dh=i.date?`<b class="dt">${fmtDW(i.date)}${isStart?"〜":""}</b>`:"";return `<span class="ck-dot">${dot(i.done)}</span><span class="ck-nm">${esc(i.name)}</span><span class="ck-dt">${dh}</span>`;}).join("");
+        return `<div class="grp-blk">${head}<div class="cklist" style="--nmw:${nmw}">${cells}</div></div>`;}
       const items=ph.items.map(i=>{return `<div class="cl2">${dot(i.done)} ${esc(i.name)}</div>`;}).join("");
       return `<div class="grp-blk">${head}${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
