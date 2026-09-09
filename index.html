@@ -126,6 +126,14 @@
   .chk .cnote{font-size:11.5px;color:var(--muted);font-weight:400;margin-left:6px}
   .chk .cdate{flex:0 0 116px;min-width:0;min-height:36px;font-size:12.5px;padding:5px 22px 5px 6px;background-position:right 5px center;background-size:14px 14px}
   .chk .cname{flex:1;min-width:0;min-height:36px}
+  .chk2{flex-wrap:wrap;overflow:visible}
+  .chk .cdlbl{font-size:11px;color:var(--muted);font-weight:700;align-self:center;margin-left:2px}
+  .chk .nyuck{width:20px;height:20px;flex:0 0 auto;margin-left:4px}
+  .pdfmode .paygrid{display:grid;grid-template-columns:auto auto auto auto auto;justify-content:start;column-gap:6px;row-gap:6px;align-items:center;font-size:15px}
+  .pdfmode .paygrid .pn{white-space:nowrap;margin-right:6px}
+  .pdfmode .paygrid .pd{white-space:nowrap;text-align:right}
+  .pdfmode .paygrid .pm{width:1.15em;text-align:center}
+  .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:right}
   .chk .cdel{flex:0 0 38px;min-height:36px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
   .chkadd{width:100%;min-height:44px;margin-top:8px;background:#fff;border:1.5px dashed var(--navy);color:var(--navy);border-radius:8px;font-weight:700;font-size:14.5px}
   .tsrow{display:flex;gap:6px;align-items:flex-start;margin-bottom:8px}
@@ -724,7 +732,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-08-26e（工事部PDF：左右の列に順番どおり流し込んで余白を圧縮・文字切れなし／プレビューは各ページ表示）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09d（請求入金：●を各日付の直前に・詰めて見やすく・縦そろえ）</div>
   </div>
 
   <!-- EDITOR -->
@@ -744,6 +752,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <div class="gh">物件・工期・出来高 <span class="carrytag">自動引き継ぎ</span></div>
           <div class="fld"><label>物件名</label><input id="fName" placeholder=""></div>
           <div class="fld"><label>請負金額（円）</label><input id="fContract" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
+          <div class="fld"><label>増減金額（請負金額の増減・円）</label><input id="fZougen" type="text" inputmode="numeric" placeholder="実数精算などで請負金額が増減した額" oninput="this.value=fmtMoney(this.value)"></div>
           <div class="row fld">
             <div><label>実行予算01（円）</label><input id="fBudget01" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
             <div><label>実行予算02 現在（円）</label><input id="fBudget02" type="text" inputmode="numeric" placeholder="" oninput="this.value=fmtMoney(this.value)"></div>
@@ -823,7 +832,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <input id="tsName" placeholder="お名前（次回も自動で入ります）" oninput="cur.tsName=this.value;scheduleSave()">
         </div>
         <div class="grp">
-          <div class="gh">今週の予定（報告・課題・相談）</div>
+          <div class="gh">今週の予定（報告・課題・相談）<span class="carrytag" id="tsReflectTag" style="display:none">先週の「来週の予定」を反映</span></div>
           <div id="tsThisList"></div>
           <button class="chkadd" onclick="addTs('tsThisList')">＋追加</button>
         </div>
@@ -880,8 +889,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
 <!-- 下部の操作 -->
 <div class="fab" id="fabHome"><button class="btn" onclick="newReport()">＋ 新しい週報をつくる</button></div>
-<div class="fab" id="fabEdit" style="display:none"><div class="rowbtn">
+<div class="fab" id="fabEdit" style="display:none"><div class="rowbtn three">
   <button class="btn nav mobonly" onclick="prevStep()">もどる</button>
+  <button class="btn nav" onclick="draftSave()">仮保存</button>
   <button class="btn go mobonly" id="nextBtn" onclick="nextStep()">次へ →</button>
   <button class="btn nav wideonly" onclick="go('home')">ホーム</button>
   <button class="btn go wideonly" onclick="finishPC()">できた → PDF</button>
@@ -905,7 +915,7 @@ const CHECK_DEF=[
   {phase:"着工前",hasDate:false,items:[["内定通知書","各業種へ通知"],["施工店手配",""],["実行予算","01/02作成・承認"],["発注書発行",""],["着工準備①","現地確認・見本焼き"],["着工準備②","安全書類・災防協"],["着工準備③","着工前MTG・工区割図"]]},
   {phase:"工種別 開始日程",hasDate:true,items:[["共通仮設工事",""],["足場仮設工事",""],["下地調査",""],["下地補修工事",""],["高圧洗浄工事",""],["鉄部塗装工事",""],["外壁塗装工事",""],["防水工事",""],["長尺シート工事",""],["足場解体工事",""],["クリーニング工事",""],["下地検査（社内検査）",""]]},
   {phase:"竣工図書・引渡し（依頼事項）",hasDate:false,items:[["変更契約依頼",""],["保証書・出荷証明依頼",""],["下地補修図依頼",""],["竣工図書作成",""],["引渡し書類作成",""],["各種押印",""],["引渡し",""],["引継ぎ書入力",""],["竣工後会議",""],["竣工図書回覧",""],["メンテカード提出",""],["安全書類提出",""],["竣工後収支報告",""]]},
-  {phase:"入金",hasDate:true,addLabel:"請求",items:[["請求1回目",""],["請求2回目",""],["請求3回目",""]]}
+  {phase:"請求入金",hasDate:true,addLabel:"請求",items:[["請求1回目",""],["請求2回目",""],["請求3回目",""]]}
 ];
 const ICON_BLDG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 21V9h4a2 2 0 0 1 2 2v10"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>';
 const ICON_CLIP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M9 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><path d="M8 12h8M8 16h5"/></svg>';
@@ -944,13 +954,19 @@ const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"
 const val=id=>{const e=document.getElementById(id);return e?e.value:"";};
 const setV=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||"";};
 const blankDays=()=>DAYS.map((d,i)=>({d,text:"",off:i===0}));
-const defChecks=()=>CHECK_DEF.map(p=>({phase:p.phase,hasDate:p.hasDate,addLabel:p.addLabel||"",items:p.items.map(a=>({name:a[0],note:a[1],date:"",done:false,custom:false}))}));
+const defChecks=()=>CHECK_DEF.map(p=>({phase:p.phase,hasDate:p.hasDate,addLabel:p.addLabel||"",items:p.items.map(a=>({name:a[0],note:a[1],date:"",date2:"",done:false,done2:false,custom:false}))}));
 function ag(el){if(!el)return;el.style.height="auto";el.style.height=(el.scrollHeight+2)+"px";}
 let __saveTO=null;
 function scheduleSave(){if(__saveTO)clearTimeout(__saveTO);__saveTO=setTimeout(doAutoSave,700);}
 let __lastToast=0;
 function doAutoSave(){__saveTO=null;try{if(cur&&persist()){const now=Date.now();if(now-__lastToast>4000){__lastToast=now;saveToast("自動保存しました");}}}catch(e){}}
 function saveToast(msg){let t=document.getElementById("saveToast");if(!t){t=document.createElement("div");t.id="saveToast";t.className="savetoast";document.body.appendChild(t);}t.textContent=msg;t.classList.add("show");clearTimeout(t.__to);t.__to=setTimeout(()=>t.classList.remove("show"),1400);}
+// 入力途中の仮保存：今の内容を下書きとして保存（提出済にはしない）。あとで「ホーム」から続きを入力できる
+function draftSave(){
+  if(!cur)return;
+  if(!persist()){alert(curMode==="genba"?"物件名を入れてください。":"氏名・部署を入れてください。");return;}
+  saveToast("仮保存しました（下書き）");
+}
 function agAll(){document.querySelectorAll("#editor textarea").forEach(ag);}
 
 function go(s){
@@ -984,7 +1000,7 @@ function renderHome(){
     return `<div class="pcard" onclick="openProject('${p.id}')">
       <div class="pico">${ico}</div>
       <div style="flex:1;min-width:0"><div class="pn">${esc(p.name)}</div><div class="pm">${p.mode==="plan"?"TAIYOSHEET":"工事部"}${p.meta?"・"+esc(p.meta):""}${who}</div></div>
-      <span class="badge ${status}">${label}</span>
+      <span class="badge ${status}" ${rep?`onclick="event.stopPropagation();toggleSubmit('${rep.id}')" style="cursor:pointer" title="タップで「提出済／下書き」を切替"`:""}>${label}</span>
       <button class="pdel" onclick="event.stopPropagation();delProject('${p.id}')" aria-label="削除">${ICON_TRASH}</button>
       <span class="chev">›</span></div>`;}).join("");
   cnt.textContent=state.projects.length+"件";
@@ -992,23 +1008,35 @@ function renderHome(){
   st.style.display="";st.textContent=todo?`今週 未提出 ${todo}件`:"今週はすべて提出済";st.className="hstatus "+(todo?"todo":"done");
 }
 
+function toggleSubmit(rid){
+  const r=state.reports.find(x=>x.id===rid);if(!r)return;
+  r.finalized=(r.finalized===false)?true:false;   // 下書き⇔提出済 を切替（PDF出力では変わらない）
+  if(cur&&cur.id===rid)cur.finalized=r.finalized;
+  save();renderHome();
+}
 function emptyReport(mode){
   return {id:uid(),projectId:null,week:weekKey(),date:todayISO(),mode:mode||"genba",
     name:"",kokiStart:"",kokiEnd:"",deki:"",riritsu:"",tanto:"",contract:"",budget01:"",budget02:"",kotei:"順調",report:"",
     thisDays:blankDays(),nextDays:blankDays(),checks:defChecks(),miles:[],kenan:"",issue:"",
-    pNext:"",tsThis:"",tsNext:"",tsThisList:[],tsNextList:[],tsName:"",todos:[],props:[],photos:[],reflected:false,finalized:false};
+    zougen:"",pNext:"",tsThis:"",tsNext:"",tsThisList:[],tsNextList:[],tsName:"",todos:[],props:[],photos:[],reflected:false,tsReflected:false,finalized:false};
 }
 function seedFromPrev(p,prev){
   const r=emptyReport(p.mode);r.projectId=p.id;r.name=p.name;r.date=todayISO();
   if(prev){
     r.kokiStart=prev.kokiStart;r.kokiEnd=prev.kokiEnd;r.tanto=prev.tanto;r.deki=prev.deki;r.riritsu=prev.riritsu;r.kenan=prev.kenan;
-    r.contract=prev.contract||"";r.budget01=prev.budget01||"";r.budget02=prev.budget02||"";
-    if(prev.checks&&prev.checks.length)r.checks=prev.checks.map(ph=>({phase:ph.phase,hasDate:ph.hasDate,addLabel:ph.addLabel||"",items:ph.items.map(i=>({name:i.name,note:i.note,date:i.date||"",done:i.done,custom:!!i.custom}))}));
+    r.contract=prev.contract||"";r.budget01=prev.budget01||"";r.budget02=prev.budget02||"";r.zougen=prev.zougen||"";
+    if(prev.checks&&prev.checks.length)r.checks=prev.checks.map(ph=>({phase:ph.phase,hasDate:ph.hasDate,addLabel:ph.addLabel||"",items:ph.items.map(i=>({name:i.name,note:i.note,date:i.date||"",date2:i.date2||"",done:i.done,done2:!!i.done2,custom:!!i.custom}))}));
     r.miles=(prev.miles||[]).map(m=>({date:m.date,text:m.text}));
     r.thisDays=(prev.nextDays||blankDays()).map(d=>({d:d.d,text:d.off?"":d.text,off:d.off}));
     r.props=(prev.props||[]).map(x=>({name:x.name,status:x.status||""}));
     r.todos=(prev.todos||[]).filter(t=>!t.done).map(t=>({text:t.text,done:false}));
     r.reflected=(prev.nextDays||[]).some(d=>!d.off&&d.text.trim());
+    // 計画推進部（TAIYOSHEET部）：先週の「来週の予定」→今週の「今週の予定」へ引き継ぐ（工事部の日別引き継ぎと同じ考え方）
+    const prevNext=Array.isArray(prev.tsNextList)&&prev.tsNextList.length?prev.tsNextList:((prev.tsNext||"").split(/\r?\n/));
+    r.tsThisList=prevNext.map(s=>(s||"").replace(/^[・\-•\s]+/,"").trim()).filter(Boolean);
+    r.tsNextList=[];
+    r.tsName=prev.tsName||r.tsName;
+    r.tsReflected=r.tsThisList.length>0;
   }
   return r;
 }
@@ -1222,7 +1250,7 @@ function prevStep(){persist();if(step>0){step--;showStep();}else go("home");}
 function loadEditor(){
   const c=cur;
   setV("fName",c.name);setV("fKokiStart",c.kokiStart);setV("fKokiEnd",c.kokiEnd);setV("fDeki",c.deki);setV("fRiritsu",c.riritsu);setV("fTanto",c.tanto);
-  setV("fContract",fmtMoney(c.contract));setV("fBudget01",fmtMoney(c.budget01));setV("fBudget02",fmtMoney(c.budget02));
+  setV("fContract",fmtMoney(c.contract));setV("fBudget01",fmtMoney(c.budget01));setV("fBudget02",fmtMoney(c.budget02));setV("fZougen",fmtMoney(c.zougen));
   setV("fReport",c.report);setV("fKenan",c.kenan);setV("fIssue",c.issue);
   if(!Array.isArray(c.tsThisList))c.tsThisList=(c.tsThis||"").trim()?c.tsThis.split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean):[];
   if(!Array.isArray(c.tsNextList))c.tsNextList=(c.tsNext||"").trim()?c.tsNext.split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean):[];
@@ -1235,6 +1263,7 @@ function loadEditor(){
   if(!c.todos)c.todos=[];if(!c.props)c.props=[];
   c.checks.forEach(ph=>ph.items.forEach(i=>{if(i.date===undefined)i.date="";}));
   document.getElementById("reflectTag").style.display=c.reflected?"":"none";
+  const tsTag=document.getElementById("tsReflectTag");if(tsTag)tsTag.style.display=c.tsReflected?"":"none";
   renderKotei();renderDayGrid("thisDays","thisDayList");renderDayGrid("nextDays","nextDayList");
   renderChecks();renderMiles();renderTodos();renderProps();renderPhotos();
   renderTs("tsThisList");renderTs("tsNextList");
@@ -1265,11 +1294,13 @@ function renderChecks(){
       const nameHtml=it.custom
         ? `<input class="cname" value="${esc(it.name)}" placeholder="項目名" oninput="cur.checks[${pi}].items[${ii}].name=this.value">`
         : `<label class="body" for="ck_${pi}_${ii}"><span class="cn">${esc(it.name)}</span>${it.note?`<span class="cnote">${esc(it.note)}</span>`:""}</label>`;
-      const dateHtml=ph.hasDate?`<input type="date" class="cdate" value="${it.date||""}" title="日付" onchange="cur.checks[${pi}].items[${ii}].date=this.value">`:"";
+      const isNyu=ph.addLabel==="請求";   // 入金フェーズは「請求日」＋「入金日」の2つの日付
+      const dateHtml=ph.hasDate?`<span class="cdlbl">${isNyu?"請求":""}</span><input type="date" class="cdate" value="${it.date||""}" title="${isNyu?"請求日":"日付"}" onchange="cur.checks[${pi}].items[${ii}].date=this.value">`:"";
+      const date2Html=isNyu?`<input type="checkbox" class="nyuck" ${it.done2?"checked":""} title="入金済" onchange="cur.checks[${pi}].items[${ii}].done2=this.checked;renderChecks()"><span class="cdlbl">入金</span><input type="date" class="cdate" value="${it.date2||""}" title="入金日" onchange="cur.checks[${pi}].items[${ii}].date2=this.value">`:"";
       const delHtml=it.custom?`<button class="cdel" onclick="delCheckItem(${pi},${ii})" aria-label="削除">✕</button>`:"";
-      return `<div class="chk ${it.done?"on":""}">
+      return `<div class="chk ${it.done?"on":""}${isNyu?" chk2":""}">
         <input type="checkbox" id="ck_${pi}_${ii}" ${it.done?"checked":""} onchange="cur.checks[${pi}].items[${ii}].done=this.checked;renderChecks()">
-        ${nameHtml}${dateHtml}${delHtml}</div>`;}).join("");
+        ${nameHtml}${dateHtml}${date2Html}${delHtml}</div>`;}).join("");
     return `<div class="chkph">${esc(ph.phase)}<span class="chkcnt">${done}/${ph.items.length}</span></div>
       <div class="chkgrid">${rows}</div>
       <button class="chkadd" onclick="addCheckItem(${pi})">＋追加</button>`;
@@ -1277,7 +1308,7 @@ function renderChecks(){
 }
 function addCheckItem(pi){const ph=cur.checks[pi];let name="";
   if(ph.addLabel==="請求"){name=`請求${ph.items.length+1}回目`;}
-  ph.items.push({name,note:"",date:"",done:false,custom:true});renderChecks();}
+  ph.items.push({name,note:"",date:"",date2:"",done:false,done2:false,custom:true});renderChecks();}
 function delCheckItem(pi,ii){cur.checks[pi].items.splice(ii,1);renderChecks();}
 
 function renderMiles(){
@@ -1382,7 +1413,7 @@ function collect(){
   const c=cur;c.mode=curMode;
   if(curMode==="genba"){
     c.name=val("fName").trim();c.kokiStart=val("fKokiStart");c.kokiEnd=val("fKokiEnd");c.deki=val("fDeki");c.riritsu=val("fRiritsu");
-    c.contract=moneyDigits(val("fContract"));c.budget01=moneyDigits(val("fBudget01"));c.budget02=moneyDigits(val("fBudget02"));
+    c.contract=moneyDigits(val("fContract"));c.budget01=moneyDigits(val("fBudget01"));c.budget02=moneyDigits(val("fBudget02"));c.zougen=moneyDigits(val("fZougen"));
     c.date=todayISO();c.tanto=val("fTanto");c.report=val("fReport");c.kenan=val("fKenan");c.issue=val("fIssue");
   }else{c.name="TAIYOSHEET 週報";c.date=todayISO();c.tanto="";
     c.tsName=val("tsName").trim();if(c.tsName)localStorage.setItem("reporterName",c.tsName);
@@ -1425,15 +1456,21 @@ function buildSheetHTML(c){
   if(c.mode==="genba"){
     const chip=(l,v)=>`<span class="mchip"><span class="ml">${l}</span><b class="mv">${v}</b></span>`;
     const mp=[];if(c.kokiStart||c.kokiEnd)mp.push(chip("工期",`${fmtD(c.kokiStart)||"…"} ～ ${fmtD(c.kokiEnd)||"…"}`));if(c.deki!=="")mp.push(chip("出来高",`${c.deki}%`));if((c.riritsu+"").trim())mp.push(chip("利益率",`${c.riritsu}%`));
+    // 改善率＝(実行予算01−実行予算02)÷請負金額×100（利益率の改善ポイント）。3つ揃ったときだけ自動表示
+    {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};const C=num(c.contract),B1=num(c.budget01),B2=num(c.budget02);if(isFinite(C)&&C>0&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/C*100;mp.push(chip("改善率",(kz>=0?"+":"")+kz.toFixed(1)+"%"));}}
     const sb=[];if(c.date)sb.push(chip("報告日",fmtD(c.date)));if(c.tanto)sb.push(chip("担当",esc(c.tanto)));
     metaHtml=[mp.join(""),sb.join("")].filter(Boolean).join("<br>")||"　";
-    const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);
+    const mo=[];if((c.contract+"").trim())mo.push(`<div class="cl2">請負金額　<b>${yen(c.contract)}</b></div>`);if((c.zougen+"").trim())mo.push(`<div class="cl2">増減金額　<b>${yen(c.zougen)}</b></div>`);if((c.budget01+"").trim())mo.push(`<div class="cl2">実行予算01　<b>${yen(c.budget01)}</b></div>`);if((c.budget02+"").trim())mo.push(`<div class="cl2">実行予算02（現在）　<b>${yen(c.budget02)}</b></div>`);
     if(mo.length)body+=sec("金額",mo.join(""));
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
     if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`);
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
-    if(c.checks&&c.checks.length){const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const items=ph.items.map(i=>{const mark=i.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2">${mark} ${esc(i.name)}${i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:""}</div>`;}).join("");return `<div class="grp-blk"><div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
+    if(c.checks&&c.checks.length){const dot=v=>v?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const isNyu=ph.addLabel==="請求";const head=`<div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>`;
+      if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';return `<span class="pn">${esc(i.name)}</span><span class="pm">${dot(i.done)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`;}).join("");
+        return `<div class="grp-blk">${head}<div class="paygrid"><span></span><span></span><span class="ph2">請求日</span><span></span><span class="ph2">入金日</span>${cells}</div></div>`;}
+      const items=ph.items.map(i=>{const dh=i.date?`　<b class="dt">${fmtDW(i.date)}</b>`:"";return `<div class="cl2">${dot(i.done)} ${esc(i.name)}${dh}</div>`;}).join("");
+      return `<div class="grp-blk">${head}${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
     const ms=(c.miles||[]).slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
     // 末尾セクション（今後の重要な予定・懸案事項・クレーム）は赤い見出し下線で区別しつつ、他と同じく2列に流し込む
     if(ms.length)body+=sec("今後の重要な予定",ms.map(m=>`<div class="cl2">${esc(m.text)}　<b class="dt">${m.date?fmtDW(m.date):"未定"}</b></div>`).join(""),"tailsec");
@@ -1481,7 +1518,7 @@ function finishPC(){
 function editAgain(){hideShareBtn();go("editor");showStep();}
 function printPDF(){window.print();}
 function sharePDF(){
-  if(cur){cur.finalized=true;try{persist();}catch(e){}}
+  // PDFを出しても「提出済」にはしない（下書きのまま）。提出済への切替は「提出済にする」ボタンで行う
   const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   if(isMobile){
     // スマホ：印刷（ヘッダー/フッターが付く）を使わず、アプリ製のきれいなPDFを新しいタブで開く。
@@ -1556,7 +1593,6 @@ async function savePDFdesktop(){
   if(btn){btn.disabled=false;btn.textContent=o;}
   if(!blob)return;
   window.__lastPDF={blob};
-  if(cur){cur.finalized=true;try{persist();}catch(e){}}
   if(handle){
     try{const w=await handle.createWritable();await w.write(blob);await w.close();
       alert(`PDFを保存しました（ファイル名：${jaName}）。LINE WORKSのトークに、このPDFを添付して送ってください。`);return;}
@@ -1618,7 +1654,7 @@ document.addEventListener("input",e=>{if(e.target&&e.target.tagName==="TEXTAREA"
 ["input","change","click"].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest("#editor"))scheduleLive();}));
 function normalizeState(){
   const def={};CHECK_DEF.forEach(p=>def[p.phase]={hasDate:p.hasDate,addLabel:p.addLabel||""});
-  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";});});});
+  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(ph.phase==="入金")ph.phase="請求入金";if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";if(i.done2===undefined)i.done2=false;});});});
 }
 // 画面幅が変わったら（PC⇔スマホ表示の切替・回転）編集画面を作り直す（入力内容は保持）
 window.matchMedia("(min-width:900px)").addEventListener("change",()=>{
