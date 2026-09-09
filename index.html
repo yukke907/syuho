@@ -201,7 +201,7 @@
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
   .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
   .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
-  .cklist{display:grid;grid-template-columns:max-content max-content auto;column-gap:8px;row-gap:2px;align-items:baseline;font-size:14px;justify-content:start}
+  .cklist{display:grid;grid-template-columns:max-content max-content auto;column-gap:4px;row-gap:2px;align-items:baseline;font-size:14px;justify-content:start}
   .cklist>span{white-space:nowrap}
   .cklist .ck-nm{color:var(--navy)}
   .cklist .ck-dt{font-family:var(--mono);color:var(--navy);justify-self:start}
@@ -751,7 +751,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09q（工事部PDF：段落を列またぎで切らない・改行方式を安定化し文字切れを解消）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09r（工種別：日付を左に詰め・開始日に「〜」を付与）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1215,7 +1215,7 @@ function planPages(el){
         if(y>0&&(y+gap+need)>capOf(page))adv();
       }else if(y>0&&(y+gap+uh)>capOf(page))adv();
       const py=y+((y>0)?(u.head?secGap:itemGap):0);
-      put(page,{sX:srcX(u),sT:u.t,sB:u.b,col,py});
+      put(page,{sX:srcX(u),sT:u.t,sB:u.b,col,py,head:!!u.head});
       y=py+uh;
     }
   }
@@ -1223,9 +1223,16 @@ function planPages(el){
   if(cols===2&&store.length>1){
     const it=store[store.length-1];
     if(it&&it.length>1){
-      const tot=it.reduce((a,o)=>a+(o.sB-o.sT),0)+it.length*itemGap;
+      // 見出し＋続くブロックを1グループにまとめ、グループ単位で左右へ振り分ける（見出しが本文と切り離されないように）
+      const groups=[];let cur=null;
+      it.forEach(o=>{if(o.head||!cur){cur=[];groups.push(cur);}cur.push(o);});
+      const gH=g=>{let h=0;g.forEach((o,idx)=>{h+=(o.sB-o.sT)+(idx>0?itemGap:0);});return h;};
+      const tot=groups.reduce((a,g)=>a+gH(g),0)+Math.max(0,groups.length-1)*secGap;
       const target=tot/2;let cc=0,yy=0;
-      it.forEach(o=>{const h=o.sB-o.sT;if(cc===0&&yy>0&&yy>=target){cc=1;yy=0;}o.col=cc;o.py=yy+(yy>0?itemGap:0);yy=o.py+h;});
+      groups.forEach(g=>{
+        if(cc===0&&yy>0&&yy>=target){cc=1;yy=0;}
+        g.forEach((o,idx)=>{o.col=cc;o.py=yy+(idx===0?(yy>0?secGap:0):itemGap);yy=o.py+(o.sB-o.sT);});
+      });
     }
   }
   // 写真セクション：全幅ブロックとして本文の後ろにまとめて配置（列内で分割・分断しない）
@@ -1541,7 +1548,7 @@ function buildSheetHTML(c){
     const mo=[];if((c.contract+"").trim())mo.push(mrow("請負金額",yen(c.contract)));if((c.zougen+"").trim())mo.push(mrow("増減金額",yen(c.zougen)));
     {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};const C=num(c.contract),Z=num(c.zougen);if(isFinite(C)&&(c.zougen+"").trim()!==""&&isFinite(Z))mo.push(mrow("変更後請負金額",yen(C+Z)));}
     if((c.budget01+"").trim())mo.push(mrow("実行予算01",yen(c.budget01)));if((c.budget02+"").trim())mo.push(mrow("実行予算02",yen(c.budget02)));
-    if(mo.length)body+=sec("金額",`<div class="moneygrid">${mo.join("")}</div>`);
+    if(mo.length)body+=sec("金額",`<div class="grp-blk"><div class="moneygrid">${mo.join("")}</div></div>`);
     body+=sec("今週の実績",daysHTML(c.thisDays,0,c.week));
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
     if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`);
@@ -1550,7 +1557,7 @@ function buildSheetHTML(c){
       if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';return `<span class="pn">${esc(i.name)}</span><span class="pm">${dot(i.done)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`;}).join("");
         return `<div class="grp-blk">${head}<div class="paygrid"><span></span><span></span><span class="ph2">請求日</span><span></span><span class="ph2">入金日</span>${cells}</div></div>`;}
       const anyDate=ph.items.some(i=>i.date);
-      if(anyDate){const cells=ph.items.map(i=>{const dh=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:"";return `<span class="ck-dot">${dot(i.done)}</span><span class="ck-nm">${esc(i.name)}</span><span class="ck-dt">${dh}</span>`;}).join("");
+      if(anyDate){const isStart=/開始|日程/.test(ph.phase);const cells=ph.items.map(i=>{const dh=i.date?`<b class="dt">${fmtDW(i.date)}${isStart?"〜":""}</b>`:"";return `<span class="ck-dot">${dot(i.done)}</span><span class="ck-nm">${esc(i.name)}</span><span class="ck-dt">${dh}</span>`;}).join("");
         return `<div class="grp-blk">${head}<div class="cklist">${cells}</div></div>`;}
       const items=ph.items.map(i=>{return `<div class="cl2">${dot(i.done)} ${esc(i.name)}</div>`;}).join("");
       return `<div class="grp-blk">${head}${items}</div>`;}).join("");body+=`<div class="sec2"><h4>打合せ確認項目</h4>${rows}</div>`;}
