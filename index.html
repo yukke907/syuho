@@ -141,6 +141,9 @@
   .pdfmode .paygrid .pd{white-space:nowrap;text-align:left;justify-self:start}
   .pdfmode .paygrid .pm{width:1.15em;text-align:center}
   .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:left;justify-self:start}
+  .pdfmode .paygrid .pnote{grid-column:1/-1;font-size:11px;color:#7f8c99;line-height:1.45;margin:-2px 0 4px 0;white-space:normal;word-break:normal;line-break:strict;overflow-wrap:anywhere}
+  .paynoterow{margin:2px 0 2px 0}
+  .pnoteinp{width:100%;font-size:12px;color:var(--muted);padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff}
   .pdfmode .moneygrid{display:grid;grid-template-columns:max-content max-content;row-gap:5px;column-gap:14px;align-items:baseline;font-size:15px;justify-content:start}
   .pdfmode .moneygrid .mgl{white-space:nowrap}
   .pdfmode .moneygrid .mgv{text-align:right;font-weight:700;white-space:nowrap;font-family:var(--mono)}   /* 金額は右そろえで桁（末尾）を縦にそろえる */
@@ -751,7 +754,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-09s（工種別：日付列を「日付のある項目名」幅に合わせて左へ詰める）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-11a（請求入金の各回に支払条件メモを追加・PDFに小さく表示）</div>
   </div>
 
   <!-- EDITOR -->
@@ -931,11 +934,12 @@ const DAYS=["日","月","火","水","木","金","土"];
 const KOTEI=["順調","やや遅延","要応援"];
 const CATS=["現調","見積","打合せ","書類","その他"];
 const STATS=["完了","進行","予定"];
+const PAYNOTE={"1回目":"着工時：10%（着工月末締め・翌月末支払い）","2回目":"中間時：40%（出来高50%達成月末締め・翌月末支払い）","3回目":"竣工時：50%（竣工引渡し月末締め・翌月末支払い）"};
 const CHECK_DEF=[
   {phase:"着工前",hasDate:false,items:[["内定通知書","各業種へ通知"],["施工店手配",""],["実行予算","01/02作成・承認"],["発注書発行",""],["着工準備①","現地確認・見本焼き"],["着工準備②","安全書類・災防協"],["着工準備③","着工前MTG・工区割図"]]},
   {phase:"工種別 開始日程",hasDate:true,items:[["共通仮設工事",""],["足場仮設工事",""],["下地調査",""],["下地補修工事",""],["高圧洗浄工事",""],["鉄部塗装工事",""],["外壁塗装工事",""],["防水工事",""],["長尺シート工事",""],["足場解体工事",""],["クリーニング工事",""],["下地検査（社内検査）",""]]},
   {phase:"竣工図書・引渡し（依頼事項）",hasDate:false,items:[["変更契約依頼",""],["保証書・出荷証明依頼",""],["下地補修図依頼",""],["竣工図書作成",""],["引渡し書類作成",""],["各種押印",""],["引渡し",""],["引継ぎ書入力",""],["竣工後会議",""],["竣工図書回覧",""],["メンテカード提出",""],["安全書類提出",""],["竣工後収支報告",""]]},
-  {phase:"請求入金",hasDate:true,addLabel:"請求",items:[["1回目",""],["2回目",""],["3回目",""]]}
+  {phase:"請求入金",hasDate:true,addLabel:"請求",items:[["1回目",PAYNOTE["1回目"]],["2回目",PAYNOTE["2回目"]],["3回目",PAYNOTE["3回目"]]]}
 ];
 const ICON_BLDG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 21V9h4a2 2 0 0 1 2 2v10"/><path d="M8 7h2M8 11h2M8 15h2"/></svg>';
 const ICON_CLIP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M9 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><path d="M8 12h8M8 16h5"/></svg>';
@@ -1356,7 +1360,8 @@ function renderChecks(){
       if(isNyu){   // 請求入金：「1回目　□請求（日付）　□入金（日付）」の形。チェックは各ラベルの左
         const nm=`<span class="paynm">${esc(it.name)}</span>`;   // 請求入金は「N回目」を自動表示（編集不要）。追加すると自動で回数が増える
         const line=(dk,ck,lbl)=>`<input type="checkbox" ${it[ck]?"checked":""} title="${lbl}済" onchange="cur.checks[${pi}].items[${ii}].${ck}=this.checked;renderChecks()"><span class="cdlbl">${lbl}</span><input type="date" class="cdate" value="${it[dk]||""}" onchange="cur.checks[${pi}].items[${ii}].${dk}=this.value">`;
-        return `<div class="chk chk2 payrow">${nm}<div class="paygridE">${line("date","done","請求")}${line("date2","done2","入金")}</div>${delHtml}</div>`;
+        const noteInp=`<input class="pnoteinp" value="${esc(it.note||"")}" placeholder="メモ（支払条件など・PDFに小さく表示）" oninput="cur.checks[${pi}].items[${ii}].note=this.value">`;
+        return `<div class="chk chk2 payrow">${nm}<div class="paygridE">${line("date","done","請求")}${line("date2","done2","入金")}</div>${delHtml}</div><div class="paynoterow">${noteInp}</div>`;
       }
       const nameHtml=it.custom
         ? `<input class="cname" value="${esc(it.name)}" placeholder="項目名" oninput="cur.checks[${pi}].items[${ii}].name=this.value">`
@@ -1554,7 +1559,7 @@ function buildSheetHTML(c){
     if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`);
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
     if(c.checks&&c.checks.length){const dot=v=>v?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const isNyu=ph.addLabel==="請求";const head=`<div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>`;
-      if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';return `<span class="pn">${esc(i.name)}</span><span class="pm">${dot(i.done)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`;}).join("");
+      if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';const nt=(i.note||"").trim();return `<span class="pn">${esc(i.name)}</span><span class="pm">${dot(i.done)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`+(nt?`<span class="pnote">${esc(nt)}</span>`:'');}).join("");
         return `<div class="grp-blk">${head}<div class="paygrid"><span></span><span></span><span class="ph2">請求日</span><span></span><span class="ph2">入金日</span>${cells}</div></div>`;}
       const anyDate=ph.items.some(i=>i.date);
       if(anyDate){const isStart=/開始|日程/.test(ph.phase);
@@ -1764,7 +1769,7 @@ document.addEventListener("input",e=>{if(e.target&&e.target.tagName==="TEXTAREA"
 ["input","change","click"].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest("#editor"))scheduleLive();}));
 function normalizeState(){
   const def={};CHECK_DEF.forEach(p=>def[p.phase]={hasDate:p.hasDate,addLabel:p.addLabel||""});
-  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(ph.phase==="入金")ph.phase="請求入金";if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";if(i.done2===undefined)i.done2=false;if(ph.addLabel==="請求"&&typeof i.name==="string")i.name=i.name.replace(/^請求(?=\d)/,"");});});});
+  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(ph.phase==="入金")ph.phase="請求入金";if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";if(i.done2===undefined)i.done2=false;if(ph.addLabel==="請求"&&typeof i.name==="string")i.name=i.name.replace(/^請求(?=\d)/,"");if(ph.phase==="請求入金"&&i.note===undefined)i.note="";if(ph.phase==="請求入金"&&PAYNOTE[i.name]&&!(i.note||"").trim())i.note=PAYNOTE[i.name];});});});
 }
 // 画面幅が変わったら（PC⇔スマホ表示の切替・回転）編集画面を作り直す（入力内容は保持）
 window.matchMedia("(min-width:900px)").addEventListener("change",()=>{
