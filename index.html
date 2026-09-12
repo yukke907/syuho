@@ -309,23 +309,6 @@
     .sheet-photos figure{break-inside:avoid;page-break-inside:avoid}
     @page{margin:0;size:A4}
   }
-
-  /* ===== 資料をつくる（Canvaスライド用） ===== */
-  .matcard{background:var(--panel);border:1.5px solid var(--orange);border-radius:10px;padding:14px;margin-top:16px;box-shadow:0 1px 3px rgba(16,35,63,.06)}
-  .matcard .mt{font-size:16px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px}
-  .matcard .ms{font-size:13px;color:var(--muted);margin:6px 0 12px;line-height:1.7}
-  .matpick{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:14px 14px;margin-bottom:10px;min-height:64px}
-  .matpick:active{background:#F2F5F8}
-  .matpick .ico{font-size:26px;line-height:1;flex:none;width:34px;text-align:center}
-  .matpick .tx{min-width:0}
-  .matpick .tt{font-size:15.5px;font-weight:700;color:var(--navy)}
-  .matpick .ds{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.6}
-  .matpick .chev{margin-left:auto;color:var(--muted);font-size:22px;flex:none}
-  #matResult .rbox{width:100%;font-family:var(--mono);font-size:13px;line-height:1.7;border:1px solid #CBD2DC;border-radius:8px;padding:12px;background:#F7F8FB;color:var(--ink);min-height:220px;white-space:pre-wrap}
-  .step3{counter-reset:st;margin:2px 0 6px}
-  .step3 li{list-style:none;position:relative;padding:6px 0 6px 34px;font-size:14px;color:var(--ink);line-height:1.6}
-  .step3 li::before{counter-increment:st;content:counter(st);position:absolute;left:0;top:5px;width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
-  .matnote{background:var(--amber-bg);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--ink);line-height:1.7;margin-top:10px}
 </style>
 <!-- html2canvas 1.4.1 (ネット接続なしでも動くようファイル内に同梱) -->
 <script>
@@ -772,14 +755,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-
-    <div class="matcard">
-      <div class="mt">📊 資料をつくる（Canvaスライド）</div>
-      <div class="ms">提案書・御見積・企画資料を、案内どおり入力するだけ。できた文を Claude Code に貼ると、Canva スライドになります。</div>
-      <button class="btn" onclick="matStart()">資料をつくる →</button>
-    </div>
-
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-12（資料づくり／Canvaスライド用のコピペ文を追加）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-11b（請求入金メモは空欄＋例のグレー表示・物件ごとに入力）</div>
   </div>
 
   <!-- EDITOR -->
@@ -933,13 +909,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       <div class="hint">下の「PDFで共有」を押すと、きれいなPDF（日付・URLなし）ができます。スマホは共有メニューが出たら「LINE WORKS」を選んで送れます（メニューが出ない機種はPDF画面の共有ボタン□↑から送れます）。パソコンは自動でダウンロードされます。</div>
     </div>
   </div>
-
-  <!-- MATERIAL（資料をつくる：Canvaスライド用コピペ文） -->
-  <div id="material" style="display:none">
-    <div class="stepper" id="matStepper" style="display:none"><div class="steptext"><span id="matStepName"></span><span class="idx" id="matStepIdx"></span></div>
-      <div class="stepbar"><i id="matFill"></i></div></div>
-    <div class="pad"><div id="matBody"></div></div>
-  </div>
 </div>
 
 <!-- 下部の操作 -->
@@ -955,10 +924,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   <button class="btn nav" onclick="editAgain()">もどる</button>
   <button class="btn go" onclick="sharePDF()">PDFで共有</button>
   <button class="btn nav" onclick="go('home')">ホーム</button>
-</div></div>
-<div class="fab" id="fabMaterial" style="display:none"><div class="rowbtn">
-  <button class="btn nav" id="matBackBtn" onclick="matPrev()">もどる</button>
-  <button class="btn go" id="matNextBtn" onclick="matNext()">次へ →</button>
 </div></div>
 
 <div id="pdfStage" aria-hidden="true"></div>
@@ -1030,20 +995,17 @@ function draftSave(){
 function agAll(){document.querySelectorAll("#editor textarea").forEach(ag);}
 
 function go(s){
-  ["home","editor","preview","material"].forEach(x=>document.getElementById(x).style.display=x===s?"":"none");
+  ["home","editor","preview"].forEach(x=>document.getElementById(x).style.display=x===s?"":"none");
   document.getElementById("fabHome").style.display=s==="home"?"":"none";
   document.getElementById("fabEdit").style.display=s==="editor"?"":"none";
   document.getElementById("fabPreview").style.display=s==="preview"?"":"none";
-  document.getElementById("fabMaterial").style.display=s==="material"?"":"none";
   document.getElementById("backBtn").style.display=s==="home"?"none":"";
-  document.getElementById("barTitle").textContent=s==="home"?"週報":s==="preview"?"できあがり":s==="material"?"資料をつくる":"週報をつくる";
+  document.getElementById("barTitle").textContent=s==="home"?"週報":s==="preview"?"できあがり":"週報をつくる";
   if(s!=="editor")document.body.classList.remove("wideedit");
   if(s==="home")renderHome();
   window.scrollTo(0,0);
 }
-function onBack(){
-  if(document.getElementById("material").style.display!=="none"){matPrev();return;}
-  const scr=document.getElementById("editor").style.display!=="none";
+function onBack(){const scr=document.getElementById("editor").style.display!=="none";
   if(scr){persist();if(step>0){step--;showStep();}else go("home");}else go("home");}
 
 function renderHome(){
@@ -1762,250 +1724,6 @@ function generatePDF(){savePDFdesktop();}   // 互換
 function makePDF(){sharePDF();}
 function copyReport(){navigator.clipboard.writeText(buildText(cur)).then(()=>alert("テキストをコピーしました。")).catch(()=>alert("コピーできませんでした。"));}
 
-/* ============================================================
-   資料をつくる（Canvaスライド用のコピペ文を作成）
-   ・アプリで案内どおり入力 → できた文を Claude Code に貼るだけ
-   ・週報のデータ(state/cur)には一切触れず、独立して動く
-   ============================================================ */
-const PAGE_OPTS=["おまかせ","3〜5枚","6〜10枚","10枚以上"];
-const TONE_OPTS=["おまかせ","きっちり・かっちり（社外・目上向け）","やわらかい・親しみ（提案・社内向け）"];
-
-// 各資料タイプの定義。role: title=題名 / to=相手 / subject=件名 / goal=目的 / pages / tone / それ以外=本文
-const MAT_DEFS={
-  taiyo:{
-    label:"太陽シート提案資料（お客様向け）", icon:"☀️",
-    intro:"太陽シートをお客様にすすめる提案資料をつくります。わかる範囲でOK。空欄は飛ばして大丈夫です。",
-    steps:[
-      {name:"基本", fields:[
-        {k:"title", role:"title", label:"タイトル（表紙に出る題名）", def:"太陽シート ご提案", ph:"例：○○様邸 外壁リニューアルのご提案"},
-        {k:"to",    role:"to",    label:"お客様名・物件名", ph:"例：○○マンション 管理組合 様"},
-        {k:"goal",  role:"goal",  label:"この資料で伝えたいこと（ゴール）", type:"textarea", ph:"例：外壁の傷み対策として太陽シートを前向きに検討してもらう"},
-      ]},
-      {name:"内容", fields:[
-        {k:"problem",  label:"今の困りごと・課題", type:"textarea", ph:"例：外壁のひび割れ・色あせ、雨漏りの不安、メンテ費用がかさむ"},
-        {k:"merit",    label:"太陽シートで良くなること（メリット）", type:"textarea", ph:"例：見た目がきれいに／長持ちしてメンテが減る／建物を守れる"},
-        {k:"spec",     label:"仕様・特長（わかる範囲で）", type:"textarea", ph:"例：耐候性シート、○年相当の耐久、色・柄が選べる"},
-      ]},
-      {name:"仕上げ", fields:[
-        {k:"flow",  label:"施工の流れ・工期の目安", type:"textarea", ph:"例：現地調査→お見積→着工→完了（約○週間）"},
-        {k:"cost",  label:"概算費用（任意）", ph:"例：○○万円〜（面積により変動）"},
-        {k:"cases", label:"実績・事例（あれば）", type:"textarea", ph:"例：近隣の○○ビルで施工、△△の効果"},
-        {k:"photo", label:"入れたい写真の説明（Canvaで後から追加）", type:"textarea", ph:"例：施工前後の写真、シートの色見本"},
-        {k:"contact",label:"連絡先・担当", ph:"例：株式会社太陽 ○○（TEL 000-0000-0000）"},
-        {k:"pages", role:"pages", label:"スライド枚数の目安", type:"select", opts:PAGE_OPTS},
-        {k:"tone",  role:"tone",  label:"雰囲気（トーン）", type:"select", opts:TONE_OPTS},
-      ]},
-    ]},
-  mitsumori:{
-    label:"御見積のご説明資料", icon:"🧾",
-    intro:"御見積の内容をお客様にわかりやすく説明する資料をつくります。金額の内訳を整理しておくとキレイに仕上がります。",
-    steps:[
-      {name:"基本", fields:[
-        {k:"title",   role:"title",  label:"タイトル", def:"御見積書のご説明", ph:"例：○○工事 御見積のご説明"},
-        {k:"to",      role:"to",     label:"宛先・お客様名", ph:"例：○○ 様"},
-        {k:"subject", role:"subject",label:"件名（工事名）", ph:"例：外壁太陽シート施工工事"},
-      ]},
-      {name:"金額", fields:[
-        {k:"items", label:"明細（「項目 / 数量 / 単価」を1行ずつ）", type:"textarea", ph:"例：\n太陽シート施工 / 120㎡ / 3,000円\n足場設置 / 一式 / 150,000円\n高圧洗浄 / 120㎡ / 300円"},
-        {k:"extra", label:"諸経費・値引き（任意）", type:"textarea", ph:"例：諸経費 一式 50,000円／お値引き -30,000円"},
-        {k:"total", label:"合計金額（税込）", ph:"例：770,000円（税込）"},
-      ]},
-      {name:"条件", fields:[
-        {k:"terms",    label:"お支払い条件", type:"textarea", ph:"例：着工時50%・完了時50%／銀行振込"},
-        {k:"deadline", label:"見積の有効期限", ph:"例：発行日より1ヶ月"},
-        {k:"note",     label:"備考・特記事項（任意）", type:"textarea", ph:"例：追加工事が出た場合は別途お見積"},
-        {k:"pages", role:"pages", label:"スライド枚数の目安", type:"select", opts:PAGE_OPTS},
-        {k:"tone",  role:"tone",  label:"雰囲気（トーン）", type:"select", opts:TONE_OPTS},
-      ]},
-    ]},
-  kikaku:{
-    label:"社内の企画・報告資料", icon:"📈",
-    intro:"社内の会議やプレゼンで使う、企画書・報告資料をつくります。",
-    steps:[
-      {name:"基本", fields:[
-        {k:"title", role:"title", label:"タイトル", ph:"例：○○の業務改善のご提案"},
-        {k:"to",    role:"to",    label:"だれに見せる資料か", def:"社内", ph:"例：役員会議、○○部"},
-        {k:"goal",  role:"goal",  label:"目的・伝えたいこと（ゴール）", type:"textarea", ph:"例：新しい○○の導入を承認してもらう"},
-      ]},
-      {name:"内容", fields:[
-        {k:"background", label:"背景・現状", type:"textarea", ph:"例：今こういう課題がある／数字が伸び悩んでいる"},
-        {k:"data",       label:"実績・数字（あれば）", type:"textarea", ph:"例：売上前年比○%、○○件、コスト○円"},
-        {k:"proposal",   label:"提案・企画の中身", type:"textarea", ph:"例：○○を導入し、△△の流れに変える"},
-      ]},
-      {name:"仕上げ", fields:[
-        {k:"schedule", label:"スケジュール・進め方", type:"textarea", ph:"例：1ヶ月目 準備／2ヶ月目 試験導入／3ヶ月目 本運用"},
-        {k:"effect",   label:"期待できる効果・まとめ", type:"textarea", ph:"例：作業時間○%削減、ミス低減"},
-        {k:"pages", role:"pages", label:"スライド枚数の目安", type:"select", opts:PAGE_OPTS},
-        {k:"tone",  role:"tone",  label:"雰囲気（トーン）", type:"select", opts:TONE_OPTS},
-      ]},
-    ]},
-};
-
-const MAT_KEY="taiyo-material-v1";
-let matStore={};                 // {taiyo:{...}, mitsumori:{...}, kikaku:{...}}
-let mat={type:null, steps:[], step:0, data:{}};
-
-async function matLoadStore(){
-  try{if(window.storage&&window.storage.get){const r=await window.storage.get(MAT_KEY,false);if(r&&r.value){matStore=JSON.parse(r.value)||{};return;}}}catch(e){}
-  try{const v=localStorage.getItem(MAT_KEY);if(v){matStore=JSON.parse(v)||{};return;}}catch(e){}
-  try{if(window.__matmem)matStore=JSON.parse(window.__matmem)||{};}catch(e){}
-}
-async function matSaveStore(){
-  const data=JSON.stringify(matStore);
-  try{localStorage.setItem(MAT_KEY,data);}catch(e){}
-  try{if(window.storage&&window.storage.set){await window.storage.set(MAT_KEY,data,false);}}catch(e){}
-  try{window.__matmem=data;}catch(e){}
-}
-
-function matStart(){ mat={type:null,steps:[],step:0,data:{}}; go("material"); matRender(); }
-
-function matPickType(t){
-  const def=MAT_DEFS[t]; if(!def)return;
-  mat.type=t; mat.steps=def.steps; mat.step=0;
-  mat.data=Object.assign({}, matStore[t]||{});
-  // 既定値（未入力のときだけ）
-  def.steps.forEach(s=>s.fields.forEach(f=>{ if(f.def&&(mat.data[f.k]==null||mat.data[f.k]==="")) mat.data[f.k]=f.def; }));
-  matRender();
-}
-
-function matField(f){
-  const v=mat.data[f.k]||"";
-  const hint=f.hint?`<div class="hint">${esc(f.hint)}</div>`:"";
-  let ctrl;
-  if(f.type==="select"){
-    ctrl=`<select id="m_${f.k}">`+f.opts.map(o=>`<option${o===v?" selected":""}>${esc(o)}</option>`).join("")+`</select>`;
-  }else if(f.type==="textarea"){
-    ctrl=`<textarea id="m_${f.k}" rows="3" placeholder="${esc(f.ph||"")}">${esc(v)}</textarea>`;
-  }else{
-    ctrl=`<input id="m_${f.k}" type="text" placeholder="${esc(f.ph||"")}" value="${esc(v)}">`;
-  }
-  return `<div class="fld"><label>${esc(f.label)}</label>${ctrl}${hint}</div>`;
-}
-
-function matRender(){
-  const stepper=document.getElementById("matStepper");
-  const back=document.getElementById("matBackBtn");
-  const next=document.getElementById("matNextBtn");
-  const body=document.getElementById("matBody");
-
-  // 1) 種類えらび
-  if(!mat.type){
-    stepper.style.display="none";
-    back.textContent="ホーム"; next.style.display="none";
-    const btn=t=>{const d=MAT_DEFS[t];return `<button class="matpick" onclick="matPickType('${t}')"><span class="ico">${d.icon}</span><span class="tx"><span class="tt">${esc(d.label)}</span><span class="ds">${esc(d.intro)}</span></span><span class="chev">›</span></button>`;};
-    body.innerHTML=`<div class="grp"><div class="gh">どんな資料をつくりますか？</div>
-      <div class="hint" style="margin:0 0 12px">つくりたいものを1つえらんでください。</div>
-      ${btn("taiyo")}${btn("mitsumori")}${btn("kikaku")}</div>`;
-    window.scrollTo(0,0); return;
-  }
-
-  next.style.display="";
-  const total=mat.steps.length+1;               // 入力ステップ + 仕上がり
-  const isResult=(mat.step>=mat.steps.length);
-  stepper.style.display="";
-  document.getElementById("matStepName").textContent=isResult?"できあがり":MAT_DEFS[mat.type].label.replace(/（.*/,"")+"・"+mat.steps[mat.step].name;
-  document.getElementById("matStepIdx").textContent=`${mat.step+1} / ${total}`;
-  document.getElementById("matFill").style.width=Math.round((mat.step+1)/total*100)+"%";
-  back.textContent="もどる";
-
-  // 2) 仕上がり（コピペ文）
-  if(isResult){
-    next.textContent="Claude Code用にコピー";
-    const text=buildMatPrompt();
-    body.innerHTML=`<div id="matResult">
-      <div class="grp"><div class="gh">① できた文をコピー</div>
-        <textarea class="rbox" id="matOut" readonly>${esc(text)}</textarea>
-        <button class="btn block" onclick="matCopy()" style="margin-top:10px">この文をコピーする</button>
-      </div>
-      <div class="grp"><div class="gh">② Claude Code に貼るだけ</div>
-        <ol class="step3">
-          <li>スマホ／パソコンで <b>Claude Code</b> をひらく</li>
-          <li>いま「コピー」した文を、そのまま <b>貼り付け</b>て送る</li>
-          <li>あとは AI が1つずつ案内。<b>構成案でOK</b>を出すと、Canva のスライドができます</li>
-        </ol>
-        <div class="matnote">💡 はじめての時だけ、Canva との「連携（つなぐ設定）」を AI が案内します。むずかしい言葉が出たら「初心者にもわかるように」と伝えればOK。<br>できたスライドは Canva 上で、写真や飾りをあとから足せます。</div>
-      </div></div>`;
-    window.scrollTo(0,0); return;
-  }
-
-  // 3) 入力ステップ
-  next.textContent="次へ →";
-  const st=mat.steps[mat.step];
-  body.innerHTML=`<div class="grp"><div class="gh">${esc(MAT_DEFS[mat.type].label)}</div>
-      <div class="hint" style="margin:0 0 4px">${esc(MAT_DEFS[mat.type].intro)}</div></div>
-    <div class="grp">${st.fields.map(matField).join("")}</div>`;
-  window.scrollTo(0,0);
-  setTimeout(()=>document.querySelectorAll("#matBody textarea").forEach(ag),20);
-}
-
-function matCollect(){
-  if(!mat.type||mat.step>=mat.steps.length)return;
-  mat.steps[mat.step].fields.forEach(f=>{ const e=document.getElementById("m_"+f.k); if(e)mat.data[f.k]=e.value; });
-  matStore[mat.type]=Object.assign({}, mat.data);
-  matSaveStore();
-}
-
-function matNext(){
-  if(!mat.type)return;
-  if(mat.step>=mat.steps.length){ matCopy(); return; }     // 仕上がり画面
-  matCollect();
-  if(mat.step===0){
-    const tk=mat.steps[0].fields.find(f=>f.role==="title");
-    if(tk && !(mat.data[tk.k]||"").trim()){ alert("タイトルを入れてください。"); return; }
-  }
-  mat.step++; matRender();
-}
-
-function matPrev(){
-  if(!mat.type){ go("home"); return; }
-  matCollect();
-  if(mat.step<=0){ mat.type=null; matRender(); return; }    // 種類えらびへ
-  mat.step--; matRender();
-}
-
-function matVal(k){ return (mat.data[k]||"").trim(); }
-function matLine(label,v){ v=(v||"").trim(); return v?`【${label}】${v}\n`:""; }
-function matSec(label,v){ v=(v||"").trim(); return v?`● ${label}\n${v}\n\n`:""; }
-
-function buildMatPrompt(){
-  const def=MAT_DEFS[mat.type];
-  const g={}; // role -> value
-  def.steps.forEach(s=>s.fields.forEach(f=>{ if(f.role)g[f.role]=matVal(f.k); }));
-  const title=g.title||def.label;
-  const to=g.to||""; const subject=g.subject||""; const goal=g.goal||"";
-  const pages=g.pages||"おまかせ"; const tone=g.tone||"おまかせ";
-
-  let h="";
-  h+=`テーマ：${title}\n\n`;
-  h+=`Claude Code と Canva を連携して、下の内容でスライド資料を作り、Canva であとから編集できる形で納品してください。\n\n`;
-  h+=`・Canva と未連携なら、まず連携（つなぐ設定）から。専門用語を使わず1つずつ案内して、接続できたことを確認してから次へ進んでください\n`;
-  h+=`・準備ができたら、まず「構成案（各スライドの見出し）」を見せてください。私がOKしたらスライド作成へ進んでください\n`;
-  h+=`・文章は、下の内容をもとに読みやすく整えてください（事実ベースで、盛りすぎないでください）\n`;
-  h+=`・写真や飾りを入れたい所は、最後に私が Canva 上で足せるよう、目印（プレースホルダー）を置いてください\n`;
-  h+=`・私は AI 初心者です。迷ったら、おすすめで進めてください\n`;
-  h+=`\n――――――――――\n`;
-  h+=matLine("資料の種類",def.label);
-  h+=matLine(mat.type==="kikaku"?"見せる相手":"相手・お客様",to);
-  h+=matLine("件名",subject);
-  h+=matLine("ゴール",goal);
-  h+=matLine("スライド枚数の目安",pages);
-  h+=matLine("雰囲気（トーン）",tone);
-  h+=`――――――――――\n\n■ 盛り込みたい内容\n\n`;
-
-  let b="";
-  def.steps.forEach(s=>s.fields.forEach(f=>{ if(!f.role) b+=matSec(f.label.replace(/（.*?）/g,""), matVal(f.k)); }));
-  if(!b.trim()) b="（内容はおまかせで、上のテーマとゴールに合う一般的な構成で作ってください）\n";
-  return (h+b).trim()+"\n";
-}
-
-function matCopy(){
-  const text=buildMatPrompt();
-  const done=()=>{ saveToast("コピーしました。Claude Code に貼り付けてください"); };
-  const fallback=()=>{ const ta=document.getElementById("matOut"); if(ta){ta.removeAttribute("readonly");ta.focus();ta.select();try{document.execCommand("copy");done();}catch(e){alert("コピーできませんでした。文をlong-tap／選択してコピーしてください。");}ta.setAttribute("readonly","");} else {alert("コピーできませんでした。");} };
-  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(fallback); }
-  else { fallback(); }
-}
-
 async function save(){
   const data=JSON.stringify(state);
   try{localStorage.setItem(KEY,data);}catch(e){}                 // 通常ブラウザ：端末に確実に保存
@@ -2059,7 +1777,7 @@ function normalizeState(){
 window.matchMedia("(min-width:900px)").addEventListener("change",()=>{
   if(cur&&document.getElementById("editor").style.display!=="none"){collect();showStep();}
 });
-(async()=>{await load();await matLoadStore();normalizeState();renderHome();go("home");})();
+(async()=>{await load();normalizeState();renderHome();go("home");})();
 </script>
 </body>
 </html>
