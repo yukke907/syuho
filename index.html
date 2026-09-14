@@ -48,6 +48,8 @@
   .fld{margin-bottom:11px}
   .autohint{display:inline-block;margin-left:6px;font-size:11px;font-weight:600;color:var(--muted);background:#EEF1F5;border-radius:4px;padding:1px 6px;vertical-align:middle}
   .autofld{background:#F2F5F8!important;color:var(--navy);font-weight:700;cursor:default}
+  .row.three{gap:8px}
+  .sublbl{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:600}
   .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.6}
   button{font-family:var(--font);cursor:pointer}
 
@@ -143,7 +145,7 @@
   .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:left;justify-self:start}
   .pdfmode .paygrid .pnote{grid-column:1/-1;font-size:11px;color:#7f8c99;line-height:1.45;margin:-2px 0 4px 0;white-space:normal;word-break:normal;line-break:strict;overflow-wrap:anywhere}
   .paynoterow{margin:2px 0 2px 0}
-  .pnoteinp{width:100%;font-size:12px;color:var(--navy);padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .pnoteinp{width:100%;font-size:12px;color:var(--navy);padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font-family:inherit;line-height:1.5;resize:none;overflow:hidden;min-height:2.7em;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere}
   .pnoteinp::placeholder{color:#9aa5b1;opacity:1}
   .pdfmode .moneygrid{display:grid;grid-template-columns:max-content max-content;row-gap:5px;column-gap:14px;align-items:baseline;font-size:15px;justify-content:start}
   .pdfmode .moneygrid .mgl{white-space:nowrap}
@@ -755,7 +757,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-11b（請求入金メモは空欄＋例のグレー表示・物件ごとに入力）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-14c（請求入金メモ欄を折り返し表示にして例文のはみ出しを解消）</div>
   </div>
 
   <!-- EDITOR -->
@@ -782,9 +784,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           </div>
           <div class="fld"><label>工期</label><div class="row"><input id="fKokiStart" type="date"><input id="fKokiEnd" type="date"></div></div>
           <div class="fld"><label>出来高（％）</label><input id="fDeki" type="number" inputmode="decimal" min="0" max="100" placeholder="65"></div>
-          <div class="row fld">
-            <div><label>利益率（％）<span class="autohint">自動計算</span></label><input id="fRiritsu" type="text" class="autofld" readonly tabindex="-1" placeholder="—"></div>
-            <div><label>改善率（％）<span class="autohint">自動計算</span></label><input id="fKaizen" type="text" class="autofld" readonly tabindex="-1" placeholder="—"></div>
+          <div class="fld"><label>利益率（％）<span class="autohint">自動計算</span></label>
+            <div class="row three">
+              <div><label class="sublbl">契約時</label><input id="fRiritsu0" type="text" class="autofld" readonly tabindex="-1" placeholder="—"></div>
+              <div><label class="sublbl">02実行予算</label><input id="fRiritsu" type="text" class="autofld" readonly tabindex="-1" placeholder="—"></div>
+              <div><label class="sublbl">改善率</label><input id="fKaizen" type="text" class="autofld" readonly tabindex="-1" placeholder="—"></div>
+            </div>
           </div>
           <div class="fld"><label>担当者</label><input id="fTanto" placeholder="氏名"></div>
         </div>
@@ -938,7 +943,7 @@ const STATS=["完了","進行","予定"];
 const PAYNOTE={"1回目":"着工時：10%（着工月末締め・翌月末支払い）","2回目":"中間時：40%（出来高50%達成月末締め・翌月末支払い）","3回目":"竣工時：50%（竣工引渡し月末締め・翌月末支払い）"};
 const CHECK_DEF=[
   {phase:"着工前",hasDate:false,items:[["内定通知書","各業種へ通知"],["施工店手配",""],["実行予算","01/02作成・承認"],["発注書発行",""],["着工準備①","現地確認・見本焼き"],["着工準備②","安全書類・災防協"],["着工準備③","着工前MTG・工区割図"]]},
-  {phase:"工種別 開始日程",hasDate:true,items:[["共通仮設工事",""],["足場仮設工事",""],["下地調査",""],["下地補修工事",""],["高圧洗浄工事",""],["鉄部塗装工事",""],["外壁塗装工事",""],["防水工事",""],["長尺シート工事",""],["足場解体工事",""],["クリーニング工事",""],["下地検査（社内検査）",""]]},
+  {phase:"工種別 開始日程",hasDate:true,items:[["共通仮設工事",""],["足場仮設工事",""],["下地調査",""],["下地補修工事",""],["高圧洗浄工事",""],["シーリング工事",""],["鉄部塗装工事",""],["外壁塗装工事",""],["防水工事",""],["長尺シート工事",""],["足場解体工事",""],["クリーニング工事",""],["下地検査（社内検査）",""]]},
   {phase:"竣工図書・引渡し（依頼事項）",hasDate:false,items:[["変更契約依頼",""],["保証書・出荷証明依頼",""],["下地補修図依頼",""],["竣工図書作成",""],["引渡し書類作成",""],["各種押印",""],["引渡し",""],["引継ぎ書入力",""],["竣工後会議",""],["竣工図書回覧",""],["メンテカード提出",""],["安全書類提出",""],["竣工後収支報告",""]]},
   {phase:"請求入金",hasDate:true,addLabel:"請求",items:[["1回目",""],["2回目",""],["3回目",""]]}
 ];
@@ -1362,7 +1367,7 @@ function renderChecks(){
         const nm=`<span class="paynm">${esc(it.name)}</span>`;   // 請求入金は「N回目」を自動表示（編集不要）。追加すると自動で回数が増える
         const line=(dk,ck,lbl)=>`<input type="checkbox" ${it[ck]?"checked":""} title="${lbl}済" onchange="cur.checks[${pi}].items[${ii}].${ck}=this.checked;renderChecks()"><span class="cdlbl">${lbl}</span><input type="date" class="cdate" value="${it[dk]||""}" onchange="cur.checks[${pi}].items[${ii}].${dk}=this.value">`;
         const eg=PAYNOTE[it.name]||"着工時：10%（着工月末締め・翌月末支払い）";   // 物件ごとに違うので既定値は入れず、例をグレーで表示（入力用）
-        const noteInp=`<input class="pnoteinp" value="${esc(it.note||"")}" placeholder="例：${esc(eg)}" oninput="cur.checks[${pi}].items[${ii}].note=this.value">`;
+        const noteInp=`<textarea class="pnoteinp" rows="2" placeholder="例：${esc(eg)}" oninput="cur.checks[${pi}].items[${ii}].note=this.value;autoGrow(this)">${esc(it.note||"")}</textarea>`;   // 長い例文でも折り返して全文表示（スマホで右にはみ出さない）
         return `<div class="chk chk2 payrow">${nm}<div class="paygridE">${line("date","done","請求")}${line("date2","done2","入金")}</div>${delHtml}</div><div class="paynoterow">${noteInp}</div>`;
       }
       const nameHtml=it.custom
@@ -1376,7 +1381,9 @@ function renderChecks(){
       <div class="chkgrid">${rows}</div>
       <button class="chkadd" onclick="addCheckItem(${pi})">＋追加</button>`;
   }).join("");
+  document.querySelectorAll("#checkList .pnoteinp").forEach(autoGrow);   // 入力済みメモの高さを内容に合わせる
 }
+function autoGrow(el){if(!el)return;el.style.height="auto";el.style.height=el.scrollHeight+"px";}
 function addCheckItem(pi){const ph=cur.checks[pi];let name="";
   if(ph.addLabel==="請求"){name=`${ph.items.length+1}回目`;}
   ph.items.push({name,note:"",date:"",date2:"",done:false,done2:false,custom:true});renderChecks();}
@@ -1480,13 +1487,14 @@ function toggleMic(){
 function insertText(el,t){if(!el)return;const s=el.selectionStart??el.value.length,e=el.selectionEnd??el.value.length;
   el.value=el.value.slice(0,s)+t+el.value.slice(e);el.dispatchEvent(new Event("input",{bubbles:true}));el.focus();ag(el);}
 
-// 利益率・改善率の自動計算（表示専用フィールドへ反映）
-//  変更後請負金額＝請負金額＋増減金額。利益率＝(変更後請負金額−実行予算02)/変更後請負金額×100。改善率＝(実行予算01−実行予算02)/変更後請負金額×100
+// 利益率の自動計算（表示専用フィールドへ反映）。すべて変更後請負金額（＝請負金額＋増減金額）を分母にする。
+//  契約時＝(変更後請負−実行予算01)/変更後請負×100、02実行予算＝(変更後請負−実行予算02)/変更後請負×100、改善率＝(実行予算01−実行予算02)/変更後請負×100
 function updateAutoRates(){
   const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};
   const C=num(val("fContract")),Z=num(val("fZougen")),B1=num(val("fBudget01")),B2=num(val("fBudget02"));
   const adj=(isFinite(C)?C:0)+(isFinite(Z)?Z:0);const hasAdj=isFinite(C)&&adj>0;
-  const r=document.getElementById("fRiritsu"),k=document.getElementById("fKaizen");
+  const r0=document.getElementById("fRiritsu0"),r=document.getElementById("fRiritsu"),k=document.getElementById("fKaizen");
+  if(r0)r0.value=(hasAdj&&isFinite(B1))?((adj-B1)/adj*100).toFixed(1):"";
   if(r)r.value=(hasAdj&&isFinite(B2))?((adj-B2)/adj*100).toFixed(1):"";
   if(k){if(hasAdj&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/adj*100;k.value=(kz>=0?"+":"")+kz.toFixed(1);}else k.value="";}
 }
@@ -1495,7 +1503,7 @@ function collect(){
   if(curMode==="genba"){
     c.name=val("fName").trim();c.kokiStart=val("fKokiStart");c.kokiEnd=val("fKokiEnd");c.deki=val("fDeki");
     c.contract=moneyDigits(val("fContract"));c.budget01=moneyDigits(val("fBudget01"));c.budget02=moneyDigits(val("fBudget02"));c.zougen=moneyDigits(val("fZougen"));
-    updateAutoRates();c.riritsu=val("fRiritsu");c.kaizen=val("fKaizen").trim();   // 利益率・改善率は自動計算値を保存（手入力不可）
+    updateAutoRates();c.riritsu0=val("fRiritsu0");c.riritsu=val("fRiritsu");c.kaizen=val("fKaizen").trim();   // 利益率（契約時/02実行予算）・改善率は自動計算値を保存（手入力不可）
     c.date=todayISO();c.tanto=val("fTanto");c.report=val("fReport");c.kenan=val("fKenan");c.issue=val("fIssue");
   }else{c.name="TAIYOSHEET 週報";c.date=todayISO();c.tanto="";
     c.tsName=val("tsName").trim();if(c.tsName)localStorage.setItem("reporterName",c.tsName);
@@ -1543,12 +1551,10 @@ function buildSheetHTML(c){
     {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};
      const C=num(c.contract),Z=num(c.zougen),B1=num(c.budget01),B2=num(c.budget02);
      const adj=(isFinite(C)?C:0)+(isFinite(Z)?Z:0);const hasAdj=isFinite(C)&&adj>0;
-     const rMan=(c.riritsu+"").trim();
-     if(rMan!==""){mp.push(chip("利益率",rMan.replace(/%$/,"")+"%"));}
-     else if(hasAdj&&isFinite(B2)){mp.push(chip("利益率",((adj-B2)/adj*100).toFixed(1)+"%"));}
-     const kMan=(c.kaizen+"").trim();
-     if(kMan!==""){mp.push(chip("改善率",kMan.replace(/%$/,"")+"%"));}
-     else if(hasAdj&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/adj*100;mp.push(chip("改善率",(kz>=0?"+":"")+kz.toFixed(1)+"%"));}}
+     // 利益率：契約時（予算01）／02実行予算（予算02）／改善率。すべて変更後請負金額を分母に自動計算。PDFでも「利益率」と分かるよう明記。
+     if(hasAdj&&isFinite(B1))mp.push(chip("利益率(契約時)",((adj-B1)/adj*100).toFixed(1)+"%"));
+     if(hasAdj&&isFinite(B2))mp.push(chip("利益率(02実行予算)",((adj-B2)/adj*100).toFixed(1)+"%"));
+     if(hasAdj&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/adj*100;mp.push(chip("改善率",(kz>=0?"+":"")+kz.toFixed(1)+"%"));}}
     const sb=[];if(c.date)sb.push(chip("報告日",fmtD(c.date)));if(c.tanto)sb.push(chip("担当",esc(c.tanto)));
     metaHtml=[mp.join(""),sb.join("")].filter(Boolean).join("<br>")||"　";
     const mrow=(l,v)=>`<span class="mgl">${l}</span><span class="mgv">${v}</span>`;
@@ -1771,7 +1777,13 @@ document.addEventListener("input",e=>{if(e.target&&e.target.tagName==="TEXTAREA"
 ["input","change","click"].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest("#editor"))scheduleLive();}));
 function normalizeState(){
   const def={};CHECK_DEF.forEach(p=>def[p.phase]={hasDate:p.hasDate,addLabel:p.addLabel||""});
-  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(ph.phase==="入金")ph.phase="請求入金";if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";if(i.done2===undefined)i.done2=false;if(ph.addLabel==="請求"&&typeof i.name==="string")i.name=i.name.replace(/^請求(?=\d)/,"");if(ph.phase==="請求入金"&&i.note===undefined)i.note="";if(ph.phase==="請求入金"&&PAYNOTE[i.name]&&i.note===PAYNOTE[i.name])i.note="";});});});
+  (state.reports||[]).forEach(r=>{if(r.checks)r.checks.forEach(ph=>{if(ph.phase==="入金")ph.phase="請求入金";if(def[ph.phase]){ph.hasDate=def[ph.phase].hasDate;ph.addLabel=def[ph.phase].addLabel;}if(ph.items)ph.items.forEach(i=>{if(i.date===undefined)i.date="";if(i.date2===undefined)i.date2="";if(i.done2===undefined)i.done2=false;if(ph.addLabel==="請求"&&typeof i.name==="string")i.name=i.name.replace(/^請求(?=\d)/,"");if(ph.phase==="請求入金"&&i.note===undefined)i.note="";if(ph.phase==="請求入金"&&PAYNOTE[i.name]&&i.note===PAYNOTE[i.name])i.note="";});
+    // 既存レポートの工種欄に「シーリング工事」が無ければ、高圧洗浄工事の次に挿入（無ければ末尾）
+    if(ph.phase==="工種別 開始日程"&&ph.items&&!ph.items.some(i=>i.name==="シーリング工事")){
+      let idx=ph.items.findIndex(i=>i.name==="高圧洗浄工事");idx=idx>=0?idx+1:ph.items.length;
+      ph.items.splice(idx,0,{name:"シーリング工事",note:"",date:"",date2:"",done:false,done2:false,custom:false});
+    }
+  });});
 }
 // 画面幅が変わったら（PC⇔スマホ表示の切替・回転）編集画面を作り直す（入力内容は保持）
 window.matchMedia("(min-width:900px)").addEventListener("change",()=>{
