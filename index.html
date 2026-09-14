@@ -145,7 +145,7 @@
   .pdfmode .paygrid .ph2{font-size:11.5px;color:#93a0ad;font-weight:700;text-align:left;justify-self:start}
   .pdfmode .paygrid .pnote{grid-column:1/-1;font-size:11px;color:#7f8c99;line-height:1.45;margin:-2px 0 4px 0;white-space:normal;word-break:normal;line-break:strict;overflow-wrap:anywhere}
   .paynoterow{margin:2px 0 2px 0}
-  .pnoteinp{width:100%;font-size:12px;color:var(--navy);padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .pnoteinp{width:100%;font-size:12px;color:var(--navy);padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font-family:inherit;line-height:1.5;resize:none;overflow:hidden;min-height:2.7em;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere}
   .pnoteinp::placeholder{color:#9aa5b1;opacity:1}
   .pdfmode .moneygrid{display:grid;grid-template-columns:max-content max-content;row-gap:5px;column-gap:14px;align-items:baseline;font-size:15px;justify-content:start}
   .pdfmode .moneygrid .mgl{white-space:nowrap}
@@ -757,7 +757,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-14b（PDFの利益率ラベルを明記：利益率(契約時)/利益率(02実行予算)/改善率）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-14c（請求入金メモ欄を折り返し表示にして例文のはみ出しを解消）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1367,7 +1367,7 @@ function renderChecks(){
         const nm=`<span class="paynm">${esc(it.name)}</span>`;   // 請求入金は「N回目」を自動表示（編集不要）。追加すると自動で回数が増える
         const line=(dk,ck,lbl)=>`<input type="checkbox" ${it[ck]?"checked":""} title="${lbl}済" onchange="cur.checks[${pi}].items[${ii}].${ck}=this.checked;renderChecks()"><span class="cdlbl">${lbl}</span><input type="date" class="cdate" value="${it[dk]||""}" onchange="cur.checks[${pi}].items[${ii}].${dk}=this.value">`;
         const eg=PAYNOTE[it.name]||"着工時：10%（着工月末締め・翌月末支払い）";   // 物件ごとに違うので既定値は入れず、例をグレーで表示（入力用）
-        const noteInp=`<input class="pnoteinp" value="${esc(it.note||"")}" placeholder="例：${esc(eg)}" oninput="cur.checks[${pi}].items[${ii}].note=this.value">`;
+        const noteInp=`<textarea class="pnoteinp" rows="2" placeholder="例：${esc(eg)}" oninput="cur.checks[${pi}].items[${ii}].note=this.value;autoGrow(this)">${esc(it.note||"")}</textarea>`;   // 長い例文でも折り返して全文表示（スマホで右にはみ出さない）
         return `<div class="chk chk2 payrow">${nm}<div class="paygridE">${line("date","done","請求")}${line("date2","done2","入金")}</div>${delHtml}</div><div class="paynoterow">${noteInp}</div>`;
       }
       const nameHtml=it.custom
@@ -1381,7 +1381,9 @@ function renderChecks(){
       <div class="chkgrid">${rows}</div>
       <button class="chkadd" onclick="addCheckItem(${pi})">＋追加</button>`;
   }).join("");
+  document.querySelectorAll("#checkList .pnoteinp").forEach(autoGrow);   // 入力済みメモの高さを内容に合わせる
 }
+function autoGrow(el){if(!el)return;el.style.height="auto";el.style.height=el.scrollHeight+"px";}
 function addCheckItem(pi){const ph=cur.checks[pi];let name="";
   if(ph.addLabel==="請求"){name=`${ph.items.length+1}回目`;}
   ph.items.push({name,note:"",date:"",date2:"",done:false,done2:false,custom:true});renderChecks();}
