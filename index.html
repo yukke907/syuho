@@ -757,7 +757,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-14a（工種にシーリング工事を追加・利益率を契約時/02実行予算/改善率の3項目に）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-14b（PDFの利益率ラベルを明記：利益率(契約時)/利益率(02実行予算)/改善率）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1549,9 +1549,9 @@ function buildSheetHTML(c){
     {const num=v=>{const n=parseFloat((v+"").replace(/[^0-9.\-]/g,""));return isFinite(n)?n:NaN;};
      const C=num(c.contract),Z=num(c.zougen),B1=num(c.budget01),B2=num(c.budget02);
      const adj=(isFinite(C)?C:0)+(isFinite(Z)?Z:0);const hasAdj=isFinite(C)&&adj>0;
-     // 利益率：契約時（予算01）／02実行予算（予算02）／改善率。すべて変更後請負金額を分母に自動計算。
-     if(hasAdj&&isFinite(B1))mp.push(chip("契約時",((adj-B1)/adj*100).toFixed(1)+"%"));
-     if(hasAdj&&isFinite(B2))mp.push(chip("02実行予算",((adj-B2)/adj*100).toFixed(1)+"%"));
+     // 利益率：契約時（予算01）／02実行予算（予算02）／改善率。すべて変更後請負金額を分母に自動計算。PDFでも「利益率」と分かるよう明記。
+     if(hasAdj&&isFinite(B1))mp.push(chip("利益率(契約時)",((adj-B1)/adj*100).toFixed(1)+"%"));
+     if(hasAdj&&isFinite(B2))mp.push(chip("利益率(02実行予算)",((adj-B2)/adj*100).toFixed(1)+"%"));
      if(hasAdj&&isFinite(B1)&&isFinite(B2)){const kz=(B1-B2)/adj*100;mp.push(chip("改善率",(kz>=0?"+":"")+kz.toFixed(1)+"%"));}}
     const sb=[];if(c.date)sb.push(chip("報告日",fmtD(c.date)));if(c.tanto)sb.push(chip("担当",esc(c.tanto)));
     metaHtml=[mp.join(""),sb.join("")].filter(Boolean).join("<br>")||"　";
