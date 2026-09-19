@@ -208,6 +208,15 @@
   .sec2 h4{font-size:14px;font-weight:700;color:var(--navy);margin:0 0 6px;border-left:4px solid var(--orange);padding-left:9px}
   .sec2 p{margin:0;font-size:14.5px;white-space:pre-wrap;line-break:strict}
   .dl2{font-size:14px;padding:2px 0}.dl2 b{display:inline-block;min-width:2.4em;color:var(--navy)}
+  /* 日別カード：日付を色バッジにして本文と分け、日ごとに区切り線。休工日は薄く。 */
+  .daycard{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid #EAEEF3}
+  .daycard .daybadge{display:inline-block;white-space:nowrap;text-align:center;font-weight:700;color:#fff;background:var(--navy);border-radius:5px;padding:2px 8px;font-size:13px}
+  .daycard .daybadge .dow{font-weight:600;font-size:11.5px;opacity:.85;margin-left:1px}
+  .daycard .daybadge.sun{background:#B23A48}
+  .daycard .daybadge.sat{background:#2F6D9E}
+  .daycard .daytxt{line-height:1.6}
+  .daycard.off{opacity:.5}
+  .daycard.off .daybadge{background:#9AA5B1}
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
   .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
   .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
@@ -761,7 +770,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-19a（物件・案件リスト：補足説明の入力欄を案件名の下に丸ぽち＋インデントで差別化）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-19b（工事部PDF：日別作業を色バッジ＋区切り線の日別カードに、見やすさ改善）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1544,7 +1553,11 @@ function buildText(c){
 }
 
 function sec(t,inner,cls){return inner?`<div class="sec2${cls?" "+cls:""}"><h4>${t}</h4>${inner}</div>`:"";}
-function daysHTML(arr,off,week){return arr.map((d,i)=>`<div class="dl2"><b>${dayMD(week,off||0,i)}（${d.d}）</b>${d.off?"休工日":(esc(d.text.trim())||"―")}</div>`).join("");}
+function daysHTML(arr,off,week){return arr.map((d,i)=>{
+  const md=dayMD(week,off||0,i),dow=d.d,dc=dow==="日"?"sun":(dow==="土"?"sat":"");
+  const txt=d.off?"休工日":(esc(d.text.trim())||"―");
+  return `<div class="dl2 daycard${d.off?" off":""}"><span class="daybadge ${dc}">${md}<span class="dow">（${dow}）</span></span><span class="daytxt">${txt}</span></div>`;
+}).join("");}
 function buildSheetHTML(c){
   let body="",head,metaHtml;
   if(c.mode==="genba"){
