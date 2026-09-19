@@ -163,6 +163,10 @@
   .prow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
   .prow .pcol{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
   .prow .cdel{flex:0 0 40px;min-height:40px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:8px;font-size:15px;padding:0}
+  .prow .pname{font-weight:600}
+  .prow .pstatusrow{display:flex;align-items:center;gap:6px;padding-left:14px}
+  .prow .pbul{flex:0 0 auto;color:var(--muted);font-size:14px;line-height:1}
+  .prow .pstatus{flex:1;min-width:0;font-size:13px;color:var(--muted);background:#F7F9FB;border-color:var(--line);padding-top:9px;padding-bottom:9px}
   .chkph{margin:12px 0 5px}
 
   /* 予定リスト */
@@ -757,7 +761,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-14d（PDFヘッダー：利益率3項目を同じ行にまとめ、改善率の単独改行を解消）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-19a（物件・案件リスト：補足説明の入力欄を案件名の下に丸ぽち＋インデントで差別化）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1433,8 +1437,8 @@ function renderProps(){
   const el=document.getElementById("propList");if(!el)return;
   el.innerHTML=cur.props.map((p,i)=>`<div class="prow">
     <div class="pcol">
-      <input value="${esc(p.name)}" placeholder="物件・客先名" oninput="cur.props[${i}].name=this.value">
-      <input value="${esc(p.status||"")}" placeholder="状況（例：見積提出待ち）" oninput="cur.props[${i}].status=this.value">
+      <input class="pname" value="${esc(p.name)}" placeholder="物件・客先名" oninput="cur.props[${i}].name=this.value">
+      <div class="pstatusrow"><span class="pbul">└</span><input class="pstatus" value="${esc(p.status||"")}" placeholder="補足説明（例：見積提出待ち）" oninput="cur.props[${i}].status=this.value"></div>
     </div>
     <button class="cdel" onclick="delProp(${i})" aria-label="削除">✕</button></div>`).join("")
     ||`<div class="hint">「＋追加」で追加。リストは翌週に引き継がれます。</div>`;
