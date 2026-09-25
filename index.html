@@ -215,6 +215,8 @@
   .daycard .daybadge.sun{background:#B23A48}
   .daycard .daybadge.sat{background:#2F6D9E}
   .daycard .daytxt{line-height:1.6}
+  .daycard .daytxt .ptitem{display:block;padding-left:1.05em;text-indent:-1.05em;line-height:1.6;margin:1px 0}
+  .daycard .daytxt .pb{color:var(--orange);font-weight:700}
   .daycard.off{opacity:.5}
   .daycard.off .daybadge{background:#9AA5B1}
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
@@ -770,7 +772,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-19b（工事部PDF：日別作業を色バッジ＋区切り線の日別カードに、見やすさ改善）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-25a（工事部PDF：日別作業を1文=1項目の箇条書きにしてさらに拾いやすく）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1553,10 +1555,17 @@ function buildText(c){
 }
 
 function sec(t,inner,cls){return inner?`<div class="sec2${cls?" "+cls:""}"><h4>${t}</h4>${inner}</div>`:"";}
+function splitPoints(t){return String(t||"").split(/\r?\n|(?<=[。])/).map(s=>s.trim()).filter(Boolean);}
 function daysHTML(arr,off,week){return arr.map((d,i)=>{
   const md=dayMD(week,off||0,i),dow=d.d,dc=dow==="日"?"sun":(dow==="土"?"sat":"");
-  const txt=d.off?"休工日":(esc(d.text.trim())||"―");
-  return `<div class="dl2 daycard${d.off?" off":""}"><span class="daybadge ${dc}">${md}<span class="dow">（${dow}）</span></span><span class="daytxt">${txt}</span></div>`;
+  let inner;
+  if(d.off){inner="休工日";}
+  else{const raw=(d.text||"").trim();
+    if(!raw){inner="―";}
+    else{const pts=splitPoints(raw);   // 長い作業内容は「1文＝1項目」で箇条書きにして拾いやすく
+      inner=pts.length>1?pts.map(s=>`<span class="ptitem"><span class="pb">・</span>${esc(s)}</span>`).join(""):esc(raw);}
+  }
+  return `<div class="dl2 daycard${d.off?" off":""}"><span class="daybadge ${dc}">${md}<span class="dow">（${dow}）</span></span><span class="daytxt">${inner}</span></div>`;
 }).join("");}
 function buildSheetHTML(c){
   let body="",head,metaHtml;
