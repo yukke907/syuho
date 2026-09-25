@@ -208,6 +208,17 @@
   .sec2 h4{font-size:14px;font-weight:700;color:var(--navy);margin:0 0 6px;border-left:4px solid var(--orange);padding-left:9px}
   .sec2 p{margin:0;font-size:14.5px;white-space:pre-wrap;line-break:strict}
   .dl2{font-size:14px;padding:2px 0}.dl2 b{display:inline-block;min-width:2.4em;color:var(--navy)}
+  /* 日別カード：日付を色バッジにして本文と分け、日ごとに区切り線。休工日は薄く。 */
+  .daycard{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid #EAEEF3}
+  .daycard .daybadge{display:inline-block;white-space:nowrap;text-align:center;font-weight:700;color:#fff;background:var(--navy);border-radius:5px;padding:2px 8px;font-size:13px}
+  .daycard .daybadge .dow{font-weight:600;font-size:11.5px;opacity:.85;margin-left:1px}
+  .daycard .daybadge.sun{background:#B23A48}
+  .daycard .daybadge.sat{background:#2F6D9E}
+  .daycard .daytxt{line-height:1.6}
+  .daycard .daytxt .ptitem{display:block;padding-left:1.05em;text-indent:-1.05em;line-height:1.6;margin:1px 0}
+  .daycard .daytxt .pb{color:var(--orange);font-weight:700}
+  .daycard.off{opacity:.5}
+  .daycard.off .daybadge{background:#9AA5B1}
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
   .cl2 .dt{font-family:var(--mono);white-space:nowrap;color:var(--navy);margin-left:4px}
   .cl2 .rem{color:var(--red)} .cl2 .ok{color:var(--green)}
@@ -761,7 +772,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-19a（物件・案件リスト：補足説明の入力欄を案件名の下に丸ぽち＋インデントで差別化）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-25b（写真：見出しと写真を一緒に改ページ・見出しだけ取り残さない）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1270,14 +1281,19 @@ function planPages(el){
     let pg=store.length?store.length-1:0;
     const colBottomOf=p=>{const a=store[p]||[];let mb=0;a.forEach(o=>{mb=Math.max(mb,(o.py||0)+(o.sB-o.sT));});return mb;};
     let yy=store.length?colBottomOf(pg):0;
-    bands.forEach(band=>{
-      const bh=band.b-band.t;if(bh<=1)return;
+    for(let bi=0;bi<bands.length;bi++){
+      const band=bands[bi];
+      const bh=band.b-band.t;if(bh<=1)continue;
       const gap=(yy>0)?(band.head?secGap:itemGap):0;
-      if(yy>0&&(yy+gap+bh)>capOf(pg)){pg++;yy=0;}
+      if(band.head&&bi+1<bands.length){
+        // 「写真」見出しは最初の写真行と一緒に置けなければ、見出しごと次ページへ送る（見出しだけ取り残さない）
+        const nb=bands[bi+1];const need=bh+itemGap+Math.max(0,nb.b-nb.t);
+        if(yy>0&&(yy+gap+need)>capOf(pg)){pg++;yy=0;}
+      }else if(yy>0&&(yy+gap+bh)>capOf(pg)){pg++;yy=0;}
       const py=yy+((yy>0)?(band.head?secGap:itemGap):0);
       put(pg,{full:true,sX:pr.l,sW:pr.w,sT:band.t,sB:band.b,py});
       yy=py+bh;
-    });
+    }
   }
   const pages=[];
   for(let pg=0;pg<store.length;pg++){
@@ -1544,7 +1560,18 @@ function buildText(c){
 }
 
 function sec(t,inner,cls){return inner?`<div class="sec2${cls?" "+cls:""}"><h4>${t}</h4>${inner}</div>`:"";}
-function daysHTML(arr,off,week){return arr.map((d,i)=>`<div class="dl2"><b>${dayMD(week,off||0,i)}（${d.d}）</b>${d.off?"休工日":(esc(d.text.trim())||"―")}</div>`).join("");}
+function splitPoints(t){return String(t||"").split(/\r?\n|(?<=[。])/).map(s=>s.trim()).filter(s=>s&&s!=="。");}
+function daysHTML(arr,off,week){return arr.map((d,i)=>{
+  const md=dayMD(week,off||0,i),dow=d.d,dc=dow==="日"?"sun":(dow==="土"?"sat":"");
+  let inner;
+  if(d.off){inner="休工日";}
+  else{const raw=(d.text||"").trim();
+    if(!raw){inner="―";}
+    else{const pts=splitPoints(raw);   // 長い作業内容は「1文＝1項目」で箇条書きにして拾いやすく
+      inner=pts.length>1?pts.map(s=>`<span class="ptitem"><span class="pb">・</span>${esc(s)}</span>`).join(""):esc(raw);}
+  }
+  return `<div class="dl2 daycard${d.off?" off":""}"><span class="daybadge ${dc}">${md}<span class="dow">（${dow}）</span></span><span class="daytxt">${inner}</span></div>`;
+}).join("");}
 function buildSheetHTML(c){
   let body="",head,metaHtml;
   if(c.mode==="genba"){
