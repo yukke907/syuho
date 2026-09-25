@@ -772,7 +772,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-25a（工事部PDF：日別作業を1文=1項目の箇条書きにしてさらに拾いやすく）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-25b（写真：見出しと写真を一緒に改ページ・見出しだけ取り残さない）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1281,14 +1281,19 @@ function planPages(el){
     let pg=store.length?store.length-1:0;
     const colBottomOf=p=>{const a=store[p]||[];let mb=0;a.forEach(o=>{mb=Math.max(mb,(o.py||0)+(o.sB-o.sT));});return mb;};
     let yy=store.length?colBottomOf(pg):0;
-    bands.forEach(band=>{
-      const bh=band.b-band.t;if(bh<=1)return;
+    for(let bi=0;bi<bands.length;bi++){
+      const band=bands[bi];
+      const bh=band.b-band.t;if(bh<=1)continue;
       const gap=(yy>0)?(band.head?secGap:itemGap):0;
-      if(yy>0&&(yy+gap+bh)>capOf(pg)){pg++;yy=0;}
+      if(band.head&&bi+1<bands.length){
+        // 「写真」見出しは最初の写真行と一緒に置けなければ、見出しごと次ページへ送る（見出しだけ取り残さない）
+        const nb=bands[bi+1];const need=bh+itemGap+Math.max(0,nb.b-nb.t);
+        if(yy>0&&(yy+gap+need)>capOf(pg)){pg++;yy=0;}
+      }else if(yy>0&&(yy+gap+bh)>capOf(pg)){pg++;yy=0;}
       const py=yy+((yy>0)?(band.head?secGap:itemGap):0);
       put(pg,{full:true,sX:pr.l,sW:pr.w,sT:band.t,sB:band.b,py});
       yy=py+bh;
-    });
+    }
   }
   const pages=[];
   for(let pg=0;pg<store.length;pg++){
@@ -1555,7 +1560,7 @@ function buildText(c){
 }
 
 function sec(t,inner,cls){return inner?`<div class="sec2${cls?" "+cls:""}"><h4>${t}</h4>${inner}</div>`:"";}
-function splitPoints(t){return String(t||"").split(/\r?\n|(?<=[。])/).map(s=>s.trim()).filter(Boolean);}
+function splitPoints(t){return String(t||"").split(/\r?\n|(?<=[。])/).map(s=>s.trim()).filter(s=>s&&s!=="。");}
 function daysHTML(arr,off,week){return arr.map((d,i)=>{
   const md=dayMD(week,off||0,i),dow=d.d,dc=dow==="日"?"sun":(dow==="土"?"sat":"");
   let inner;
