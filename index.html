@@ -198,8 +198,8 @@
 
   /* PDFシート */
   .sheet{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(16,35,63,.08);overflow:hidden;margin-bottom:16px}
-  .sheet-hd{background:var(--navy);color:#fff;font-weight:700;font-size:18px;padding:16px}
-  .sheet-hd .hd-tanto{font-size:15px;font-weight:600;opacity:.9;white-space:nowrap;margin-left:14px}
+  .sheet-hd{background:var(--navy);color:#fff;font-weight:700;font-size:18px;padding:16px;display:flex;align-items:baseline;gap:12px}
+  .sheet-hd .hd-tanto{font-size:15px;font-weight:600;opacity:.9;white-space:nowrap;margin-left:auto}
   .sheet-meta{font-size:14px;color:#39434e;padding:14px 16px 16px;border-bottom:1px solid var(--line);line-height:2.1}
   .sheet-meta .mchip{display:inline-block;margin-right:26px;white-space:nowrap}
   .sheet-meta .ml{color:#93a0ad;font-size:.82em;margin-right:7px;letter-spacing:.02em}
@@ -773,7 +773,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-25c（担当者名を工事名の横に表示・メタの独立行をやめる）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-26a（担当者名を工事名の横で右寄せ表示）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1615,7 +1615,7 @@ function buildSheetHTML(c){
     if(ms.length)body+=sec("今後の重要な予定",`<div class="grp-blk"><div class="cklist mlist">${ms.map(m=>`<span class="ck-nm">${esc(m.text)}</span><span class="ck-dt">${m.date?fmtDW(m.date):"未定"}</span>`).join("")}</div></div>`,"tailsec");
     if(c.kenan.trim())body+=sec("懸案事項 → 対応",`<p>${esc(c.kenan)}</p>`,"tailsec");
     if(c.issue.trim())body+=sec("クレーム・問い合わせ",`<p>${esc(c.issue)}</p>`,"tailsec");
-    head=`週間報告　${esc(c.name)||"（物件名未記入）"}${c.tanto?`<span class="hd-tanto">担当：${esc(c.tanto)}</span>`:""}`;   // 担当者名を工事名の横に（改行せず・小さめ）
+    head=`<span class="hd-title">週間報告　${esc(c.name)||"（物件名未記入）"}</span>${c.tanto?`<span class="hd-tanto">担当：${esc(c.tanto)}</span>`:""}`;   // 担当者名を工事名の横（右寄せ・改行せず・小さめ）
   }else{
     const tsArr=k=>{const a=c[k];if(Array.isArray(a))return a.map(s=>(s||"").trim()).filter(Boolean);return (c[k==="tsThisList"?"tsThis":"tsNext"]||"").split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean);};
     const bl=arr=>arr.map(t=>`<div class="bl2">・${esc(t)}</div>`).join("");
