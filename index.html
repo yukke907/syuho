@@ -218,6 +218,10 @@
   .daycard .daytxt{line-height:1.6}
   .daycard .daytxt .ptitem{display:block;padding-left:1.05em;text-indent:-1.05em;line-height:1.6;margin:1px 0}
   .daycard .daytxt .pb{color:var(--orange);font-weight:700}
+  /* 重要ワード自動ハイライト：工種＝薄い青チップ、注意ワード＝赤、数値＝太字 */
+  .daycard .daytxt .hl-k{background:#EAF0F7;color:#1f3a5f;border-radius:3px;padding:0 3px}
+  .daycard .daytxt .hl-a{background:#FBE7EA;color:#B23A48;font-weight:700;border-radius:3px;padding:0 3px}
+  .daycard .daytxt .hl-n{font-weight:700;color:#12233f}
   .daycard.off{opacity:.5}
   .daycard.off .daybadge{background:#9AA5B1}
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
@@ -773,7 +777,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-26a（担当者名を工事名の横で右寄せ表示）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-26b（工事部PDF：作業内容の重要ワードを自動ハイライト）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1562,6 +1566,19 @@ function buildText(c){
 
 function sec(t,inner,cls){return inner?`<div class="sec2${cls?" "+cls:""}"><h4>${t}</h4>${inner}</div>`:"";}
 function splitPoints(t){return String(t||"").split(/\r?\n|(?<=[。])/).map(s=>s.trim()).filter(s=>s&&s!=="。");}
+/* ── 重要ワード自動ハイライト（工事部の長文をぱっと拾えるように） ── */
+const HL_KOSHU=["共通仮設","足場解体","足場架設","足場","高圧洗浄","下地補修","下地調査","下地","シーリング","外壁塗装","鉄部塗装","長尺シート","防水","タイル","目地","クリーニング","洗浄","塗装","補修","検査"];
+const HL_ALERT=["遅延","遅れ","中止","中断","雨天","荒天","悪天候","強風","クレーム","苦情","危険","事故","是正","手直し","不具合","変更","追加","協議","トラブル","要注意","未定"];
+function _reEsc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+function _hlRe(list){return new RegExp("("+[...list].sort((a,b)=>b.length-a.length).map(_reEsc).join("|")+")","g");}
+const RE_ALERT=_hlRe(HL_ALERT), RE_KOSHU=_hlRe(HL_KOSHU);
+const RE_NUM=/(\d[\d,]*(?:\.\d+)?)(\s*)(％|%|㎡|㎥|m²|m2|本|名|台|枚|箇所|カ所|か所|ヶ所|面|階|棟|戸|回|割|日間|日|時間|時|kg|t)/g;
+function hlDay(escaped){   // 入力はesc済み。挿入するタグ/クラス名は英数のみなので日本語キーワードの再マッチは起きない
+  return String(escaped||"")
+    .replace(RE_ALERT,'<span class="hl-a">$1</span>')
+    .replace(RE_KOSHU,'<span class="hl-k">$1</span>')
+    .replace(RE_NUM,'<span class="hl-n">$1$2$3</span>');
+}
 function daysHTML(arr,off,week){return arr.map((d,i)=>{
   const md=dayMD(week,off||0,i),dow=d.d,dc=dow==="日"?"sun":(dow==="土"?"sat":"");
   let inner;
@@ -1569,7 +1586,7 @@ function daysHTML(arr,off,week){return arr.map((d,i)=>{
   else{const raw=(d.text||"").trim();
     if(!raw){inner="―";}
     else{const pts=splitPoints(raw);   // 長い作業内容は「1文＝1項目」で箇条書きにして拾いやすく
-      inner=pts.length>1?pts.map(s=>`<span class="ptitem"><span class="pb">・</span>${esc(s)}</span>`).join(""):esc(raw);}
+      inner=pts.length>1?pts.map(s=>`<span class="ptitem"><span class="pb">・</span>${hlDay(esc(s))}</span>`).join(""):hlDay(esc(raw));}
   }
   return `<div class="dl2 daycard${d.off?" off":""}"><span class="daybadge ${dc}">${md}<span class="dow">（${dow}）</span></span><span class="daytxt">${inner}</span></div>`;
 }).join("");}
