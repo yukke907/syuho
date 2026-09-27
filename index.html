@@ -779,7 +779,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-27b（工事部PDF：区切り線＋工種チップ／チェックを緑塗りチェックで明確化）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-27c（太陽シートの「やること」も緑チェックに統一）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1639,7 +1639,7 @@ function buildSheetHTML(c){
     if(tThis.length)body+=sec("今週の予定（報告・課題・相談）",bl(tThis),"breakok");
     if(tNext.length)body+=sec("来週の予定（報告・課題・相談）",bl(tNext),"breakok");
     const td=(c.todos||[]).filter(t=>t&&(t.text||"").trim());
-    if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
+    if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ckbadge done">✓</span>':'<span class="ckbadge"></span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
     const pr=(c.props||[]).filter(x=>x&&(x.name||"").trim());
     if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="bl2">・${esc(x.name)}${x.status?`<br><span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
     head=`TAIYOSHEET 計画推進部 週報`;const pchip=(l,v)=>`<span class="mchip"><span class="ml">${l}</span><b class="mv">${v}</b></span>`;const pm=[];if(c.date)pm.push(pchip("報告日",fmtD(c.date)));const sp=weekSpan(c.week);if(sp)pm.push(pchip("対象週",sp));if((c.tsName||"").trim())pm.push(pchip("記入者",esc(c.tsName)));metaHtml=pm.join("")||"　";
