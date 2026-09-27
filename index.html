@@ -232,6 +232,9 @@
   .cklist .ck-dt{font-family:var(--mono);color:var(--navy);justify-self:start}
   .cklist .ok{color:var(--green)}
   .cklist.mlist{grid-template-columns:max-content auto}
+  /* 開始/完了マーク：済＝緑の塗りチェック、未＝空チェックボックスで一目で区別 */
+  .sheet .ckbadge{display:inline-block;width:16px;height:16px;line-height:14px;text-align:center;border-radius:4px;font-size:11px;font-weight:700;border:1.6px solid #C3CAD2;color:#fff;background:#fff;box-sizing:border-box;vertical-align:-3px}
+  .sheet .ckbadge.done{background:var(--green);border-color:var(--green)}
   .bl2{font-size:14px;padding:3px 0;line-height:1.6;padding-left:1.1em;text-indent:-1.1em}
   .phh{margin:11px 0 6px}
   .phhu{display:inline-block;font-weight:700;font-size:14px;color:var(--navy);border-bottom:2px solid var(--orange);padding-bottom:2px}
@@ -776,7 +779,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-27a（工事部PDF：日別は区切り線のみ・工種名を青チップ・数値太字）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-27b（工事部PDF：区切り線＋工種チップ／チェックを緑塗りチェックで明確化）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1612,7 +1615,7 @@ function buildSheetHTML(c){
     body+=sec("工程状況",`<p>${esc(c.kotei||"順調")}</p>`);
     if(c.report.trim())body+=sec("今週の報告",`<p>${esc(c.report)}</p>`);
     body+=sec("来週の工事予定",daysHTML(c.nextDays,7,c.week));
-    if(c.checks&&c.checks.length){const dot=v=>v?'<span class="ok">●</span>':'<span style="color:#B9C0C6">○</span>';const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const isNyu=ph.addLabel==="請求";const head=`<div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>`;
+    if(c.checks&&c.checks.length){const dot=v=>v?'<span class="ckbadge done">✓</span>':'<span class="ckbadge"></span>';const rows=c.checks.map(ph=>{const done=ph.items.filter(i=>i.done).length;const isNyu=ph.addLabel==="請求";const head=`<div class="phh"><span class="phhu">${esc(ph.phase)}（${done}/${ph.items.length}）</span></div>`;
       if(isNyu){const cells=ph.items.map(i=>{const d1=i.date?`<b class="dt">${fmtDW(i.date)}</b>`:'<span style="color:#B9C0C6">—</span>';const d2=i.date2?`<b class="dt">${fmtDW(i.date2)}</b>`:'<span style="color:#B9C0C6">未</span>';const nt=(i.note||"").trim();return `<span class="pn">${esc(i.name)}</span><span class="pm">${dot(i.done)}</span><span class="pd">${d1}</span><span class="pm">${dot(i.done2)}</span><span class="pd">${d2}</span>`+(nt?`<span class="pnote">${esc(nt)}</span>`:'');}).join("");
         return `<div class="grp-blk">${head}<div class="paygrid"><span></span><span></span><span class="ph2">請求日</span><span></span><span class="ph2">入金日</span>${cells}</div></div>`;}
       const anyDate=ph.items.some(i=>i.date);
