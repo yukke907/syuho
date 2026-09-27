@@ -221,6 +221,8 @@
   /* 重要ワード自動ハイライト：工種＝薄い青チップ、数値＝太字 */
   .daycard .daytxt .hl-k{background:#EAF0F7;color:#1f3a5f;border-radius:3px;padding:0 3px}
   .daycard .daytxt .hl-n{font-weight:700;color:#12233f}
+  /* 計画推進部：期日・締切の強調 */
+  .sheet .hl-d{background:#FFF3E0;color:#9A5B00;font-weight:700;border-radius:3px;padding:0 3px}
   .daycard.off{opacity:.5}
   .daycard.off .daybadge{background:#9AA5B1}
   .cl2{font-size:14px;padding:2px 0}.cl2 b{color:var(--navy)}
@@ -779,7 +781,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-27c（太陽シートの「やること」も緑チェックに統一）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-27d（太陽シート：期日の強調・やること達成度・緑チェック）</div>
   </div>
 
   <!-- EDITOR -->
@@ -1578,6 +1580,9 @@ function hlDay(escaped){   // 入力はesc済み。挿入するタグ/クラス�
     .replace(RE_KOSHU,'<span class="hl-k">$1</span>')   // 工種名＝薄い青チップ
     .replace(RE_NUM,'<span class="hl-n">$1$2$3</span>'); // 数値＝太字
 }
+/* ── 計画推進部：期日・締切の強調（いつまで、が一目で分かるように） ── */
+const RE_DEADLINE=/(\d{1,2}\s*[\/月]\s*\d{1,2}日?(?:まで(?:に)?)?|\d{1,2}月末(?:まで)?|今週中(?:まで)?|来週(?:まで)?|週明け|月末(?:まで)?|月初|本日中|当日中|明日|次回|締切|期限|納期|至急)/g;
+function hlPlan(escaped){return String(escaped||"").replace(RE_DEADLINE,'<span class="hl-d">$1</span>');}
 function daysHTML(arr,off,week){return arr.map((d,i)=>{
   const md=dayMD(week,off||0,i),dow=d.d,dc=dow==="日"?"sun":(dow==="土"?"sat":"");
   let inner;
@@ -1634,12 +1639,12 @@ function buildSheetHTML(c){
     head=`<span class="hd-title">週間報告　${esc(c.name)||"（物件名未記入）"}</span>${c.tanto?`<span class="hd-tanto">担当：${esc(c.tanto)}</span>`:""}`;   // 担当者名を工事名の横（右寄せ・改行せず・小さめ）
   }else{
     const tsArr=k=>{const a=c[k];if(Array.isArray(a))return a.map(s=>(s||"").trim()).filter(Boolean);return (c[k==="tsThisList"?"tsThis":"tsNext"]||"").split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean);};
-    const bl=arr=>arr.map(t=>`<div class="bl2">・${esc(t)}</div>`).join("");
+    const bl=arr=>arr.map(t=>`<div class="bl2">・${hlPlan(esc(t))}</div>`).join("");   // 期日・締切を強調
     const tThis=tsArr("tsThisList"),tNext=tsArr("tsNextList");
     if(tThis.length)body+=sec("今週の予定（報告・課題・相談）",bl(tThis),"breakok");
     if(tNext.length)body+=sec("来週の予定（報告・課題・相談）",bl(tNext),"breakok");
     const td=(c.todos||[]).filter(t=>t&&(t.text||"").trim());
-    if(td.length)body+=sec("やること",td.map(t=>{const m=t.done?'<span class="ckbadge done">✓</span>':'<span class="ckbadge"></span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
+    if(td.length)body+=sec(`やること（${td.filter(t=>t.done).length}/${td.length}）`,td.map(t=>{const m=t.done?'<span class="ckbadge done">✓</span>':'<span class="ckbadge"></span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
     const pr=(c.props||[]).filter(x=>x&&(x.name||"").trim());
     if(pr.length)body+=sec("物件・案件リスト",pr.map(x=>`<div class="bl2">・${esc(x.name)}${x.status?`<br><span style="color:var(--muted)">${esc(x.status)}</span>`:""}</div>`).join(""));
     head=`TAIYOSHEET 計画推進部 週報`;const pchip=(l,v)=>`<span class="mchip"><span class="ml">${l}</span><b class="mv">${v}</b></span>`;const pm=[];if(c.date)pm.push(pchip("報告日",fmtD(c.date)));const sp=weekSpan(c.week);if(sp)pm.push(pchip("対象週",sp));if((c.tsName||"").trim())pm.push(pchip("記入者",esc(c.tsName)));metaHtml=pm.join("")||"　";
