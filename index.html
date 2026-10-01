@@ -781,7 +781,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     <div class="datarow">
       <button onclick="loadSample()">サンプルを入れる</button>
     </div>
-    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-09-27d（太陽シート：期日の強調・やること達成度・緑チェック）</div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">ver. 2026-10-01a（太陽シート：今週・来週の予定を日別（日付つき）入力に変更）</div>
   </div>
 
   <!-- EDITOR -->
@@ -885,14 +885,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <input id="tsName" placeholder="お名前（次回も自動で入ります）" oninput="cur.tsName=this.value;scheduleSave()">
         </div>
         <div class="grp">
-          <div class="gh">今週の予定（報告・課題・相談）<span class="carrytag" id="tsReflectTag" style="display:none">先週の「来週の予定」を反映</span></div>
-          <div id="tsThisList"></div>
-          <button class="chkadd" onclick="addTs('tsThisList')">＋追加</button>
+          <div class="gh">今週の予定（日別）<span class="carrytag" id="tsReflectTag" style="display:none">先週の「来週の予定」を反映</span></div>
+          <div id="planThisDayList"></div>
+          <div class="hint">日付ごとに予定を入れてください。先週の「来週の予定」が自動で引き継がれます。休みの日は「休」ボタンで。</div>
         </div>
         <div class="grp">
-          <div class="gh">来週の予定（報告・課題・相談）</div>
-          <div id="tsNextList"></div>
-          <button class="chkadd" onclick="addTs('tsNextList')">＋追加</button>
+          <div class="gh">来週の予定（日別）</div>
+          <div id="planNextDayList"></div>
+          <div class="hint">これが翌週の「今週の予定」に自動で引き継がれます。</div>
         </div>
         <div class="grp">
           <div id="aiOutP"></div>
@@ -1090,7 +1090,7 @@ function seedFromPrev(p,prev){
     r.tsThisList=prevNext.map(s=>(s||"").replace(/^[・\-•\s]+/,"").trim()).filter(Boolean);
     r.tsNextList=[];
     r.tsName=prev.tsName||r.tsName;
-    r.tsReflected=r.tsThisList.length>0;
+    r.tsReflected=r.reflected;   // TAIYOSHEET部も日別引き継ぎ（先週の来週予定→今週）に合わせる
   }
   return r;
 }
@@ -1117,10 +1117,10 @@ function setMode(m){
   ["segGenba","segGenba2"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle("on",m==="genba");});
   ["segPlan","segPlan2"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle("on",m==="plan");});
   if(cur){cur.mode=m;
-    if(m==="plan"){   // TAIYOSHEET部：最初から1行分の入力欄を表示
-      if(!Array.isArray(cur.tsThisList)||!cur.tsThisList.length)cur.tsThisList=[""];
-      if(!Array.isArray(cur.tsNextList)||!cur.tsNextList.length)cur.tsNextList=[""];
-      renderTs("tsThisList");renderTs("tsNextList");
+    if(m==="plan"){   // TAIYOSHEET部：工事部と同じ日別（日付つき）の予定で入力
+      if(!cur.thisDays||!cur.thisDays.length)cur.thisDays=blankDays();
+      if(!cur.nextDays||!cur.nextDays.length)cur.nextDays=blankDays();
+      renderDayGrid("thisDays","planThisDayList");renderDayGrid("nextDays","planNextDayList");
     }
   }
   if(document.getElementById("editor").style.display!=="none"){step=0;showStep();}
@@ -1364,6 +1364,7 @@ function loadEditor(){
   document.getElementById("reflectTag").style.display=c.reflected?"":"none";
   const tsTag=document.getElementById("tsReflectTag");if(tsTag)tsTag.style.display=c.tsReflected?"":"none";
   renderKotei();renderDayGrid("thisDays","thisDayList");renderDayGrid("nextDays","nextDayList");
+  renderDayGrid("thisDays","planThisDayList");renderDayGrid("nextDays","planNextDayList");   // TAIYOSHEET部も日別で入力
   renderChecks();renderMiles();renderTodos();renderProps();renderPhotos();
   renderTs("tsThisList");renderTs("tsNextList");
   document.getElementById("aiOut").innerHTML="";document.getElementById("aiOutP").innerHTML="";
@@ -1373,16 +1374,17 @@ function renderKotei(){
     `<button class="${(cur.kotei||"順調")===k?"on":""}" onclick="cur.kotei='${k}';renderKotei()">${k}</button>`).join("");
 }
 function renderDayGrid(key,containerId){
+  const cont=document.getElementById(containerId);if(!cont)return;
   const off=key==="nextDays"?7:0;
-  document.getElementById(containerId).innerHTML=cur[key].map((x,i)=>{
+  cont.innerHTML=cur[key].map((x,i)=>{
     const cls=i===0?"sun":i===6?"sat":"";
     const md=dayMD(cur.week,off,i);
     return `<div class="day ${cls} ${x.off?"isoff":""}">
       <span class="dl"><span class="dd">${md}</span><span class="dw">${x.d}</span></span>
-      <textarea class="dt" rows="1" placeholder="${x.off?"休工日":"予定"}" ${x.off?"disabled":""} oninput="cur.${key}[${i}].text=this.value;ag(this)">${esc(x.text)}</textarea>
+      <textarea class="dt" rows="1" placeholder="${x.off?(curMode==="plan"?"休み":"休工日"):"予定"}" ${x.off?"disabled":""} oninput="cur.${key}[${i}].text=this.value;ag(this)">${esc(x.text)}</textarea>
       <button class="offbtn ${x.off?"on":""}" onclick="toggleOff('${key}','${containerId}',${i})">休</button>
     </div>`;}).join("");
-  document.querySelectorAll(`#${containerId} textarea`).forEach(ag);
+  cont.querySelectorAll("textarea").forEach(ag);
 }
 function toggleOff(key,containerId,i){cur[key][i].off=!cur[key][i].off;renderDayGrid(key,containerId);}
 
@@ -1559,8 +1561,14 @@ function buildText(c){
     if(c.issue.trim())L.push(`■ クレーム・問い合わせ\n${c.issue}`);
   }else{
     L.push(`【TAIYOSHEET 週報】`);if(c.date)L.push(`報告日：${fmtD(c.date)}`);L.push("");
-    if((c.tsThis||"").trim())L.push(`■ 今週の予定（報告・課題・相談）\n${c.tsThis}`);
-    if((c.tsNext||"").trim())L.push(`■ 来週の予定（報告・課題・相談）\n${c.tsNext}`);
+    const dayHasP=arr=>(arr||[]).some(d=>!d.off&&(d.text||"").trim());
+    if(dayHasP(c.thisDays)||dayHasP(c.nextDays)||!((c.tsThis||"").trim()||(c.tsNext||"").trim())){
+      L.push("■ 今週の予定");(c.thisDays||[]).forEach((d,i)=>L.push(`　${dayMD(c.week,0,i)}（${d.d}）：${d.off?"休み":((d.text||"").trim()||"―")}`));
+      L.push("■ 来週の予定");(c.nextDays||[]).forEach((d,i)=>L.push(`　${dayMD(c.week,7,i)}（${d.d}）：${d.off?"休み":((d.text||"").trim()||"―")}`));
+    }else{
+      if((c.tsThis||"").trim())L.push(`■ 今週の予定（報告・課題・相談）\n${c.tsThis}`);
+      if((c.tsNext||"").trim())L.push(`■ 来週の予定（報告・課題・相談）\n${c.tsNext}`);
+    }
     const td=(c.todos||[]).filter(t=>t.text.trim());if(td.length){L.push("■ やること");td.forEach(t=>L.push(`　${t.done?"●":"○"} ${t.text}`));}
     const pr=(c.props||[]).filter(x=>x.name.trim());if(pr.length){L.push("■ 物件・案件リスト");pr.forEach(x=>L.push(`　・${x.name}${x.status?"　"+x.status:""}`));}
   }
@@ -1583,14 +1591,14 @@ function hlDay(escaped){   // 入力はesc済み。挿入するタグ/クラス�
 /* ── 計画推進部：期日・締切の強調（いつまで、が一目で分かるように） ── */
 const RE_DEADLINE=/(\d{1,2}\s*[\/月]\s*\d{1,2}日?(?:まで(?:に)?)?|\d{1,2}月末(?:まで)?|今週中(?:まで)?|来週(?:まで)?|週明け|月末(?:まで)?|月初|本日中|当日中|明日|次回|締切|期限|納期|至急)/g;
 function hlPlan(escaped){return String(escaped||"").replace(RE_DEADLINE,'<span class="hl-d">$1</span>');}
-function daysHTML(arr,off,week){return arr.map((d,i)=>{
+function daysHTML(arr,off,week,hl,offLabel){hl=hl||hlDay;offLabel=offLabel||"休工日";return arr.map((d,i)=>{
   const md=dayMD(week,off||0,i),dow=d.d,dc=dow==="日"?"sun":(dow==="土"?"sat":"");
   let inner;
-  if(d.off){inner="休工日";}
+  if(d.off){inner=offLabel;}
   else{const raw=(d.text||"").trim();
     if(!raw){inner="―";}
     else{const pts=splitPoints(raw);   // 長い作業内容は「1文＝1項目」で箇条書きにして拾いやすく
-      inner=pts.length>1?pts.map(s=>`<span class="ptitem"><span class="pb">・</span>${hlDay(esc(s))}</span>`).join(""):hlDay(esc(raw));}
+      inner=pts.length>1?pts.map(s=>`<span class="ptitem"><span class="pb">・</span>${hl(esc(s))}</span>`).join(""):hl(esc(raw));}
   }
   return `<div class="dl2 daycard${d.off?" off":""}"><span class="daybadge ${dc}">${md}<span class="dow">（${dow}）</span></span><span class="daytxt">${inner}</span></div>`;
 }).join("");}
@@ -1639,10 +1647,16 @@ function buildSheetHTML(c){
     head=`<span class="hd-title">週間報告　${esc(c.name)||"（物件名未記入）"}</span>${c.tanto?`<span class="hd-tanto">担当：${esc(c.tanto)}</span>`:""}`;   // 担当者名を工事名の横（右寄せ・改行せず・小さめ）
   }else{
     const tsArr=k=>{const a=c[k];if(Array.isArray(a))return a.map(s=>(s||"").trim()).filter(Boolean);return (c[k==="tsThisList"?"tsThis":"tsNext"]||"").split(/\r?\n/).map(s=>s.replace(/^[・\-•\s]+/,"").trim()).filter(Boolean);};
-    const bl=arr=>arr.map(t=>`<div class="bl2">・${hlPlan(esc(t))}</div>`).join("");   // 期日・締切を強調
+    const bl=arr=>arr.map(t=>`<div class="bl2">・${hlPlan(esc(t))}</div>`).join("");   // 期日・締切を強調（旧データ用）
+    const dayHas=arr=>(arr||[]).some(d=>!d.off&&(d.text||"").trim());
     const tThis=tsArr("tsThisList"),tNext=tsArr("tsNextList");
-    if(tThis.length)body+=sec("今週の予定（報告・課題・相談）",bl(tThis),"breakok");
-    if(tNext.length)body+=sec("来週の予定（報告・課題・相談）",bl(tNext),"breakok");
+    if(dayHas(c.thisDays)||dayHas(c.nextDays)||!(tThis.length||tNext.length)){
+      body+=sec("今週の予定",daysHTML(c.thisDays||blankDays(),0,c.week,hlPlan,"休み"));   // 工事部と同じ日別（日付つき）
+      body+=sec("来週の予定",daysHTML(c.nextDays||blankDays(),7,c.week,hlPlan,"休み"));
+    }else{   // 旧データ（自由記入の今週/来週）の後方互換
+      if(tThis.length)body+=sec("今週の予定（報告・課題・相談）",bl(tThis),"breakok");
+      if(tNext.length)body+=sec("来週の予定（報告・課題・相談）",bl(tNext),"breakok");
+    }
     const td=(c.todos||[]).filter(t=>t&&(t.text||"").trim());
     if(td.length)body+=sec(`やること（${td.filter(t=>t.done).length}/${td.length}）`,td.map(t=>{const m=t.done?'<span class="ckbadge done">✓</span>':'<span class="ckbadge"></span>';return `<div class="cl2" style="padding-left:4px">${m} ${esc(t.text)}</div>`;}).join(""));
     const pr=(c.props||[]).filter(x=>x&&(x.name||"").trim());
